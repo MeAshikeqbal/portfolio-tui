@@ -79,6 +79,22 @@ Twitter:
 3. Why I Love Open Source
    Contributing to the community
    Published: 2024-01-05`
+
+	defaultHome = `Welcome.
+
+This is my terminal portfolio, inspired by classic Neofetch and SSH dashboards.
+
+Use the sidebar to explore Projects, Skills, Experience, Education, Blogs, and Contact details.`
+
+	defaultExperience = `Experience
+• Software Developer - Building backend services and developer tools
+• Open-source contributor - CLI/TUI experiences and automation
+• Focus areas - Go, API design, performance, DX`
+
+	defaultEducation = `Education
+• Bachelor-level Computer Science track
+• Continuous learning in systems design and cloud platforms
+• Practical learning through projects and open source`
 )
 
 func Fetch(client *sanity.Client) Payload {
@@ -133,6 +149,11 @@ func Fetch(client *sanity.Client) Payload {
 		content["Skills"] = "📡 Fetching skills...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultSkills
 	}
 
+	// Sidebar aliases and static sections
+	content["Home"] = defaultHome
+	content["Experience"] = defaultExperience
+	content["Education"] = defaultEducation
+
 	if about, err := client.GetAbout(); err == nil {
 		var sb strings.Builder
 		sb.WriteString("👨‍💻 About Me\n\n")
@@ -144,6 +165,10 @@ func Fetch(client *sanity.Client) Payload {
 		content["About"] = "📡 Fetching about...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultAbout
 	}
 
+	if content["Home"] == defaultHome && content["About"] != "" {
+		content["Home"] = "🏠 Home\n\n" + content["About"]
+	}
+
 	if contacts, err := client.GetContacts(); err == nil {
 		var sb strings.Builder
 		sb.WriteString("📫 Contact Information\n\n")
@@ -151,8 +176,10 @@ func Fetch(client *sanity.Client) Payload {
 			sb.WriteString(fmt.Sprintf("%s:\n  %s\n\n", c.Platform, c.Value))
 		}
 		content["Contact"] = sb.String()
+		content["Contact Me"] = sb.String()
 	} else {
 		content["Contact"] = "📡 Fetching contact...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultContact
+		content["Contact Me"] = content["Contact"]
 	}
 
 	if fetchedPosts, err := client.GetPosts(); err == nil {
@@ -187,8 +214,10 @@ func Fetch(client *sanity.Client) Payload {
 			}
 		}
 		content["Blog"] = sb.String()
+		content["Blogs"] = sb.String()
 	} else {
 		content["Blog"] = "📡 Fetching blog posts...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultBlog
+		content["Blogs"] = content["Blog"]
 	}
 
 	return Payload{Data: content, Projects: projects, Posts: posts, Err: nil}

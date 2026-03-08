@@ -66,9 +66,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		headerHeight := lipgloss.Height(m.headerView())
 		footerHeight := lipgloss.Height(m.footerView())
 		verticalMarginHeight := headerHeight + footerHeight
+		contentWidth := max(40, msg.Width-32)
 
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.viewport = viewport.New(contentWidth, msg.Height-verticalMarginHeight)
 			m.viewport.YPosition = headerHeight
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.MouseWheelDelta = 3
@@ -84,7 +85,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.projectDetailViewport.MouseWheelDelta = 3
 			m.ready = true
 		} else {
-			m.viewport.Width = msg.Width
+			m.viewport.Width = contentWidth
 			m.viewport.Height = msg.Height - verticalMarginHeight
 			m.blogDetailViewport.Width = msg.Width
 			m.blogDetailViewport.Height = msg.Height - verticalMarginHeight
@@ -92,9 +93,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.projectDetailViewport.Height = msg.Height - verticalMarginHeight
 		}
 
-		m.projectsList.SetWidth(msg.Width)
+		m.projectsList.SetWidth(contentWidth)
 		m.projectsList.SetHeight(msg.Height - verticalMarginHeight)
-		m.blogList.SetWidth(msg.Width)
+		m.blogList.SetWidth(contentWidth)
 		m.blogList.SetHeight(msg.Height - verticalMarginHeight)
 		m.help.Width = msg.Width
 
@@ -107,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		} else if m.state == contentView {
 			selectedItem := m.menu[m.selected]
-			if selectedItem != "Projects" && selectedItem != "Blog" {
+			if selectedItem != "Projects" && selectedItem != "Blogs" {
 				m.viewport, cmd = m.viewport.Update(msg)
 				cmds = append(cmds, cmd)
 			}
@@ -188,7 +189,7 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 
-	if selectedItem == "Blog" {
+	if selectedItem == "Blogs" {
 		if m.blogList.FilterState() != list.Filtering {
 			switch {
 			case key.Matches(msg, m.keys.Back):

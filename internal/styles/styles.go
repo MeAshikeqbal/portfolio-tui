@@ -44,3 +44,36 @@ var BlogScrollInfo = lipgloss.NewStyle().
 
 var LineNumberStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("240"))
+
+var SidebarTitle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("81"))
+
+var SidebarMeta = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("248"))
+
+var SidebarSection = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("244")).
+	Bold(true)
+
+var SidebarItem = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("250")).
+	PaddingLeft(1)
+
+var SidebarActiveItem = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("230")).
+	Background(lipgloss.Color("63")).
+	Bold(true).
+	PaddingLeft(1).
+	PaddingRight(1)
+
+var NeoTitle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("86"))
+
+var NeoLabel = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("111")).
+	Bold(true)
+
+var NeoSeparator = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("244"))

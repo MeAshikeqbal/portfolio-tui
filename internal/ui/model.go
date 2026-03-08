@@ -92,11 +92,13 @@ func InitialModel() Model {
 
 	return Model{
 		menu: []string{
+			"Home",
 			"Projects",
 			"Skills",
-			"Blog",
-			"About",
-			"Contact",
+			"Experience",
+			"Education",
+			"Blogs",
+			"Contact Me",
 			"Exit",
 		},
 		selected:        0,

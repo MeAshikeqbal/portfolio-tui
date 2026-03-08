@@ -67,17 +67,171 @@ func (m Model) footerView() string {
 // renderMenu renders the main menu
 func (m Model) renderMenu() string {
 	var s strings.Builder
+	sectionBreak := map[string]string{
+		"Home":   "CORE",
+		"Skills": "PROFILE",
+		"Exit":   "SYSTEM",
+	}
 
 	for i, item := range m.menu {
+		if section, ok := sectionBreak[item]; ok {
+			if i > 0 {
+				s.WriteString("\n")
+			}
+			s.WriteString(styles.SidebarSection.Render("[" + section + "]"))
+			s.WriteString("\n")
+		}
+
+		entry := fmt.Sprintf("%s %s", menuIcon(item), item)
 		if i == m.selected {
-			s.WriteString(styles.SelectedItem.Render("> " + item))
+			s.WriteString(styles.SidebarActiveItem.Render("> " + entry))
 		} else {
-			s.WriteString(styles.MenuItem.Render(item))
+			s.WriteString(styles.SidebarItem.Render("  " + entry))
 		}
 		s.WriteString("\n")
 	}
 
 	return s.String()
+}
+
+func menuIcon(item string) string {
+	switch item {
+	case "Home":
+		return "H"
+	case "Projects":
+		return "P"
+	case "Skills":
+		return "S"
+	case "Experience":
+		return "E"
+	case "Education":
+		return "D"
+	case "Blogs":
+		return "B"
+	case "Contact Me":
+		return "C"
+	case "Exit":
+		return "X"
+	default:
+		return ">"
+	}
+}
+
+func (m Model) renderNeoSidebarLogo() string {
+	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
+	logo := strings.Join([]string{
+		"      /\\",
+		"     /  \\",
+		"    / /\\ \\",
+		"   / ____ \\",
+		"  /_/    \\_\\",
+	}, "\n")
+
+	owner := strings.ToLower(strings.ReplaceAll(m.portfolioOwner, " ", ""))
+	if owner == "" {
+		owner = "user"
+	}
+
+	meta := styles.SidebarMeta.Render(owner + "@portfolio")
+	line := styles.NeoSeparator.Render(strings.Repeat("-", 20))
+	return lipgloss.JoinVertical(lipgloss.Left, logoStyle.Render(logo), meta, line)
+}
+
+func renderNeoColorSwatches() string {
+	palette := []string{"160", "166", "184", "114", "75", "69", "105", "250"}
+	chips := make([]string, 0, len(palette))
+	for _, c := range palette {
+		chips = append(chips, lipgloss.NewStyle().Background(lipgloss.Color(c)).Render("  "))
+	}
+	return strings.Join(chips, "")
+}
+
+func (m Model) renderNeoHome() string {
+	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
+	logo := strings.Join([]string{
+		"        /\\",
+		"       /  \\",
+		"      / /\\ \\",
+		"     / ____ \\",
+		"    /_/    \\_\\",
+	}, "\n")
+
+	owner := strings.ToLower(strings.ReplaceAll(m.portfolioOwner, " ", ""))
+	if owner == "" {
+		owner = "user"
+	}
+
+	title := owner + "@portfolio-tui"
+	projects := fmt.Sprintf("%d", len(m.projects))
+	posts := fmt.Sprintf("%d", len(m.posts))
+
+	info := strings.Join([]string{
+		styles.NeoTitle.Render(title),
+		styles.NeoSeparator.Render(strings.Repeat("-", len(title))),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("OS"), "Portfolio Linux"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Host"), "BubbleTea Terminal"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("TERM"), m.sessionTerminal),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Session"), m.sessionID),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Projects"), projects),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Posts"), posts),
+		"",
+		renderNeoColorSwatches(),
+	}, "\n")
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, logoStyle.Render(logo), "  ", info)
+}
+
+func (m Model) renderSidebar(height int) string {
+	title := styles.SidebarTitle.Render("NEOFETCH")
+	logo := m.renderNeoSidebarLogo()
+	body := m.renderMenu()
+
+	box := lipgloss.NewStyle().
+		Width(28).
+		Height(height).
+		Padding(0, 1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62"))
+
+	return box.Render(lipgloss.JoinVertical(lipgloss.Left, title, "", logo, "", body))
+}
+
+func (m Model) renderContentPane(height int) string {
+	selectedItem := m.menu[m.selected]
+
+	var content string
+	if selectedItem == "Home" {
+		content = m.renderNeoHome()
+	} else if m.state == menuView {
+		content = m.content[selectedItem]
+		if strings.TrimSpace(content) == "" {
+			content = "Select an item from the sidebar and press Enter."
+		}
+	} else {
+		if selectedItem == "Projects" {
+			content = m.projectsList.View()
+		} else if selectedItem == "Blogs" {
+			content = m.blogList.View()
+		} else {
+			content = m.viewport.View()
+		}
+	}
+
+	box := lipgloss.NewStyle().
+		Width(max(40, m.help.Width-32)).
+		Height(height).
+		Padding(0, 1).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62"))
+
+	return box.Render(content)
+}
+
+func (m Model) renderShellLayout() string {
+	height := max(10, m.viewport.Height)
+	sidebar := m.renderSidebar(height)
+	content := m.renderContentPane(height)
+	return lipgloss.JoinHorizontal(lipgloss.Top, sidebar, " ", content)
 }
 
 // View renders the entire view
@@ -143,22 +297,12 @@ func (m Model) View() string {
 	footer := m.footerView()
 
 	var content string
-	if m.state == menuView {
-		content = m.renderMenu()
-	} else if m.state == blogDetailView {
+	if m.state == blogDetailView {
 		content = m.blogDetailViewport.View()
 	} else if m.state == projectDetailView {
 		content = m.projectDetailViewport.View()
 	} else {
-		// Render appropriate content based on selected menu item
-		selectedItem := m.menu[m.selected]
-		if selectedItem == "Projects" {
-			content = m.projectsList.View()
-		} else if selectedItem == "Blog" {
-			content = m.blogList.View()
-		} else {
-			content = m.viewport.View()
-		}
+		content = m.renderShellLayout()
 	}
 
 	return header + "\n" + content + footer
