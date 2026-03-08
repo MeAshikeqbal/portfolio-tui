@@ -162,10 +162,22 @@ Your Sanity studio should have the following document types:
 - `PgUp`/`b` - Page up
 - `PgDn`/`f` - Page down
 - `/` - Filter list (Projects and Blog only)
-- `Enter` - Open blog post (in Blog list)
+- `Enter` - Open selected item detail page (Projects and Blog lists)
 - `Esc` - Back to menu / Clear filter
 - `?` - Toggle help
 - `q` - Quit
+
+**Project Detail View:**
+- `↑`/`k` - Scroll up line by line
+- `↓`/`j` - Scroll down line by line
+- `PgUp`/`b` - Page up
+- `PgDn`/`f` - Page down
+- `Home`/`g` - Jump to top of page
+- `End`/`G` - Jump to bottom of page
+- `Esc` - Back to projects list
+- `?` - Toggle help
+- `q` - Quit
+- Mouse wheel scrolling supported
 
 **Blog Detail View:**
 - `↑`/`k` - Scroll up line by line
@@ -222,8 +234,10 @@ portfolio-tui/
 │       ├── modules/
 │       │   ├── blog/
 │       │   │   └── renderer.go
-│       │   └── content/
-│       │       └── fetcher.go
+│       │   ├── content/
+│       │   │   └── fetcher.go
+│       │   └── project/
+│       │       └── renderer.go
 │       ├── model.go
 │       ├── update.go
 │       ├── content.go

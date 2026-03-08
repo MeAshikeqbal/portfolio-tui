@@ -19,6 +19,7 @@ const (
 	menuView viewState = iota
 	contentView
 	blogDetailView
+	projectDetailView
 )
 
 type loadingState int
@@ -39,24 +40,26 @@ type ContentMsg struct {
 }
 
 type Model struct {
-	menu               []string
-	selected           int
-	viewport           viewport.Model
-	blogDetailViewport viewport.Model
-	projectsList       list.Model
-	blogList           list.Model
-	help               help.Model
-	keys               keymap.Map
-	ready              bool
-	state              viewState
-	content            map[string]string
-	projects           []sanity.Project
-	posts              []sanity.Post
-	selectedPost       *sanity.Post
-	loadingState       loadingState
-	error              string
-	sanityClient       *sanity.Client
-	spinner            spinner.Model
+	menu                  []string
+	selected              int
+	viewport              viewport.Model
+	blogDetailViewport    viewport.Model
+	projectDetailViewport viewport.Model
+	projectsList          list.Model
+	blogList              list.Model
+	help                  help.Model
+	keys                  keymap.Map
+	ready                 bool
+	state                 viewState
+	content               map[string]string
+	projects              []sanity.Project
+	posts                 []sanity.Post
+	selectedPost          *sanity.Post
+	selectedProject       *sanity.Project
+	loadingState          loadingState
+	error                 string
+	sanityClient          *sanity.Client
+	spinner               spinner.Model
 }
 
 func InitialModel() Model {

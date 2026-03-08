@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/listitem"
 	blogmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/blog"
+	projectmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/project"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -65,12 +66,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.blogDetailViewport.YPosition = headerHeight
 			m.blogDetailViewport.MouseWheelEnabled = true
 			m.blogDetailViewport.MouseWheelDelta = 3
+
+			m.projectDetailViewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.projectDetailViewport.YPosition = headerHeight
+			m.projectDetailViewport.MouseWheelEnabled = true
+			m.projectDetailViewport.MouseWheelDelta = 3
 			m.ready = true
 		} else {
 			m.viewport.Width = msg.Width
 			m.viewport.Height = msg.Height - verticalMarginHeight
 			m.blogDetailViewport.Width = msg.Width
 			m.blogDetailViewport.Height = msg.Height - verticalMarginHeight
+			m.projectDetailViewport.Width = msg.Width
+			m.projectDetailViewport.Height = msg.Height - verticalMarginHeight
 		}
 
 		m.projectsList.SetWidth(msg.Width)
@@ -82,6 +90,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseMsg:
 		if m.state == blogDetailView {
 			m.blogDetailViewport, cmd = m.blogDetailViewport.Update(msg)
+			cmds = append(cmds, cmd)
+		} else if m.state == projectDetailView {
+			m.projectDetailViewport, cmd = m.projectDetailViewport.Update(msg)
 			cmds = append(cmds, cmd)
 		} else if m.state == contentView {
 			selectedItem := m.menu[m.selected]
@@ -99,6 +110,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateContentView(msg)
 		case blogDetailView:
 			return m.updateBlogDetailView(msg)
+		case projectDetailView:
+			return m.updateProjectDetailView(msg)
 		}
 	}
 
@@ -146,6 +159,16 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Help):
 				m.help.ShowAll = !m.help.ShowAll
 				return m, nil
+			case msg.String() == "enter":
+				if selected := m.projectsList.SelectedItem(); selected != nil {
+					if projectItem, ok := selected.(listitem.ProjectItem); ok {
+						m.selectedProject = &projectItem.Data
+						m.projectDetailViewport.SetContent(projectmodule.RenderProjectContent(m.selectedProject))
+						m.projectDetailViewport.GotoTop()
+						m.state = projectDetailView
+						return m, nil
+					}
+				}
 			}
 		}
 
@@ -219,5 +242,29 @@ func (m Model) updateBlogDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	var cmd tea.Cmd
 	m.blogDetailViewport, cmd = m.blogDetailViewport.Update(msg)
+	return m, cmd
+}
+
+func (m Model) updateProjectDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Back):
+		m.state = contentView
+		m.selectedProject = nil
+		return m, nil
+	case key.Matches(msg, m.keys.Quit):
+		return m, tea.Quit
+	case key.Matches(msg, m.keys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+		return m, nil
+	case key.Matches(msg, m.keys.Home):
+		m.projectDetailViewport.GotoTop()
+		return m, nil
+	case key.Matches(msg, m.keys.End):
+		m.projectDetailViewport.GotoBottom()
+		return m, nil
+	}
+
+	var cmd tea.Cmd
+	m.projectDetailViewport, cmd = m.projectDetailViewport.Update(msg)
 	return m, cmd
 }

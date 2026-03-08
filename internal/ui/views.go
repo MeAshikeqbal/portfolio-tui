@@ -28,6 +28,13 @@ func (m Model) headerView() string {
 		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
 	}
 
+	// Project detail view has a special header
+	if m.state == projectDetailView && m.selectedProject != nil {
+		title := styles.BlogTitleStyle.Render(m.selectedProject.Title)
+		line := strings.Repeat("─", max(0, m.projectDetailViewport.Width-lipgloss.Width(title)))
+		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
+	}
+
 	title := styles.Title.Render(name + " – " + tagline)
 	if m.state == contentView {
 		title += " > " + styles.SelectedItem.Render(m.menu[m.selected])
@@ -41,10 +48,16 @@ func (m Model) footerView() string {
 		return "\n" + m.help.View(m.keys)
 	}
 
-	// Show scroll percentage in blog detail view
+	// Show scroll percentage in detail views
 	if m.state == blogDetailView {
 		scrollInfo := styles.BlogScrollInfo.Render(fmt.Sprintf(" %3.f%% ", m.blogDetailViewport.ScrollPercent()*100))
 		line := strings.Repeat("─", max(0, m.blogDetailViewport.Width-lipgloss.Width(scrollInfo)))
+		return "\n" + lipgloss.JoinHorizontal(lipgloss.Center, line, scrollInfo)
+	}
+
+	if m.state == projectDetailView {
+		scrollInfo := styles.BlogScrollInfo.Render(fmt.Sprintf(" %3.f%% ", m.projectDetailViewport.ScrollPercent()*100))
+		line := strings.Repeat("─", max(0, m.projectDetailViewport.Width-lipgloss.Width(scrollInfo)))
 		return "\n" + lipgloss.JoinHorizontal(lipgloss.Center, line, scrollInfo)
 	}
 
@@ -93,6 +106,8 @@ func (m Model) View() string {
 		content = m.renderMenu()
 	} else if m.state == blogDetailView {
 		content = m.blogDetailViewport.View()
+	} else if m.state == projectDetailView {
+		content = m.projectDetailViewport.View()
 	} else {
 		// Render appropriate content based on selected menu item
 		selectedItem := m.menu[m.selected]
