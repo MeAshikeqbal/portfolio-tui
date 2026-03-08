@@ -302,6 +302,29 @@ func (m Model) getHelpContent() string {
 		help.WriteString("   " + descStyle.Render("View selected section"))
 		help.WriteString("\n\n")
 
+		help.WriteString(titleStyle.Render("Quick Jump"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  H"))
+		help.WriteString("  " + descStyle.Render("Home     "))
+		help.WriteString("  " + keyStyle.Render("P"))
+		help.WriteString("  " + descStyle.Render("Projects"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  S"))
+		help.WriteString("  " + descStyle.Render("Skills   "))
+		help.WriteString("  " + keyStyle.Render("E"))
+		help.WriteString("  " + descStyle.Render("Experience"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  D"))
+		help.WriteString("  " + descStyle.Render("Education"))
+		help.WriteString("  " + keyStyle.Render("B"))
+		help.WriteString("  " + descStyle.Render("Blogs"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  C"))
+		help.WriteString("  " + descStyle.Render("Contact  "))
+		help.WriteString("  " + keyStyle.Render("X"))
+		help.WriteString("  " + descStyle.Render("Exit"))
+		help.WriteString("\n\n")
+
 	case contentView:
 		selectedItem := m.menu[m.selected]
 		if selectedItem == "Projects" || selectedItem == "Blogs" {

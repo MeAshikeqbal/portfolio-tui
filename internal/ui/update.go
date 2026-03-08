@@ -168,6 +168,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// In menuView, only handle sidebar navigation - lists are visual only
+
+	// Letter shortcuts - jump directly to the section
+	if idx := menuShortcutIndex(msg.String()); idx >= 0 && idx < len(m.menu) {
+		m.selected = idx
+		m.viewport.GotoTop()
+		return m, nil
+	}
+
 	switch {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
@@ -199,6 +207,29 @@ func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// menuShortcutIndex maps a pressed key to its menu index, or -1 if not a shortcut.
+func menuShortcutIndex(key string) int {
+	switch key {
+	case "h", "H":
+		return 0 // Home
+	case "p", "P":
+		return 1 // Projects
+	case "s", "S":
+		return 2 // Skills
+	case "e", "E":
+		return 3 // Experience
+	case "d", "D":
+		return 4 // Education
+	case "b", "B":
+		return 5 // Blogs
+	case "c", "C":
+		return 6 // Contact Me
+	case "x", "X":
+		return 7 // Exit
+	}
+	return -1
 }
 
 func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
