@@ -17,27 +17,31 @@ import (
 
 // headerView renders the header based on current state
 func (m Model) headerView() string {
-	// Blog detail view breadcrumb
-	if m.state == blogDetailView && m.selectedPost != nil {
-		return layout.RenderHeader(utils.GetFullName(), utils.GetTagline(), "Blogs > "+m.selectedPost.Title)
-	}
+	breadcrumb := m.getBreadcrumb()
+	return layout.RenderHeader(utils.GetFullName(), utils.GetTagline(), breadcrumb)
+}
 
-	// Project detail view breadcrumb
-	if m.state == projectDetailView && m.selectedProject != nil {
-		return layout.RenderHeader(utils.GetFullName(), utils.GetTagline(), "Projects > "+m.selectedProject.Title)
-	}
-
-	// For menuView and contentView, show consistent header
-	if m.state == menuView || m.state == contentView {
+// getBreadcrumb returns the breadcrumb string for the current state.
+// Returns "" for Home (no header) and any unhandled state.
+func (m Model) getBreadcrumb() string {
+	switch m.state {
+	case blogDetailView:
+		if m.selectedPost != nil {
+			return "Blogs > " + m.selectedPost.Title
+		}
+		return "Blogs"
+	case projectDetailView:
+		if m.selectedProject != nil {
+			return "Projects > " + m.selectedProject.Title
+		}
+		return "Projects"
+	case menuView, contentView:
 		selectedItem := m.menu[m.selected]
 		if selectedItem == "Home" {
-			// Home page doesn't show header (neofetch style)
 			return ""
 		}
-		// All other pages show: Name - Portfolio > Section
-		return layout.RenderHeader(utils.GetFullName(), utils.GetTagline(), selectedItem)
+		return selectedItem
 	}
-
 	return ""
 }
 
@@ -112,41 +116,28 @@ func (m Model) renderContentPane(width, height int) string {
 		m.viewport.SetContent(homeContent)
 		content = m.viewport.View()
 	} else if selectedItem == "Projects" {
-		// Show list for Projects
-		listContent := m.projectsList.View()
-		// In menuView, gray out the list to show it's not interactive
-		if m.state == menuView {
-			content = utils.DimContent(listContent)
-		} else {
-			content = listContent
-		}
+		content = m.projectsList.View()
 	} else if selectedItem == "Blogs" {
-		// Show list for Blogs
-		listContent := m.blogList.View()
-		// In menuView, gray out the list to show it's not interactive
-		if m.state == menuView {
-			content = utils.DimContent(listContent)
-		} else {
-			content = listContent
-		}
-	} else if m.state == menuView {
-		// For other text content in menuView, use viewport for scrolling
-		textContent := m.content[selectedItem]
-		if strings.TrimSpace(textContent) == "" {
-			textContent = "Select an item from the sidebar and press Enter."
-		}
-		// Wrap long lines in content
-		wrappedContent := utils.WrapText(textContent, innerWidth)
-
-		// Update viewport with wrapped content
-		m.viewport.Width = innerWidth
-		m.viewport.Height = innerHeight
-		m.viewport.SetContent(wrappedContent)
-
-		content = m.viewport.View()
+		content = m.blogList.View()
 	} else {
-		// contentView for non-list items
-		content = m.viewport.View()
+		// All other text-based sections: unified styled title + scrollable viewport
+		titleStr := styles.Title.Render(sectionIcon(selectedItem) + " " + selectedItem)
+		viewportHeight := max(1, innerHeight-2) // reserve 2 lines for title + blank line
+		m.viewport.Width = innerWidth
+		m.viewport.Height = viewportHeight
+		if m.state == menuView {
+			textContent := m.content[selectedItem]
+			if strings.TrimSpace(textContent) == "" {
+				textContent = "Select an item from the sidebar and press Enter."
+			}
+			m.viewport.SetContent(utils.WrapText(textContent, innerWidth))
+		}
+		content = lipgloss.JoinVertical(lipgloss.Left, titleStr, "", m.viewport.View())
+	}
+
+	// Gray out inner content when browsing (not yet entered) for non-Home, non-Exit sections
+	if m.state == menuView && selectedItem != "Home" && selectedItem != "Exit" {
+		content = utils.DimContent(content)
 	}
 
 	box := lipgloss.NewStyle().
@@ -157,6 +148,21 @@ func (m Model) renderContentPane(width, height int) string {
 		BorderForeground(lipgloss.Color("62"))
 
 	return box.Render(content)
+}
+
+func sectionIcon(item string) string {
+	switch item {
+	case "Skills":
+		return "💻"
+	case "Experience":
+		return "💼"
+	case "Education":
+		return "🎓"
+	case "Contact Me":
+		return "📫"
+	default:
+		return "◆"
+	}
 }
 
 func (m Model) renderShellLayout() string {
@@ -246,6 +252,13 @@ func (m Model) View() string {
 	}
 
 	header := m.headerView()
+	// Gray out header when browsing (not yet entered) for non-Home, non-Exit sections
+	if m.state == menuView {
+		selectedItem := m.menu[m.selected]
+		if selectedItem != "Home" && selectedItem != "Exit" {
+			header = utils.DimContent(header)
+		}
+	}
 	footer := m.footerView(m.help.Width)
 
 	var content string

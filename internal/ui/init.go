@@ -27,6 +27,7 @@ func InitialModel() Model {
 	projectsList.SetShowHelp(false)
 	projectsList.SetFilteringEnabled(true)
 	projectsList.Styles.Title = styles.Title
+	projectsList.Styles.TitleBar = lipgloss.NewStyle()
 
 	blogDelegate := list.NewDefaultDelegate()
 	blogList := list.New([]list.Item{}, blogDelegate, 0, 0)
@@ -35,6 +36,7 @@ func InitialModel() Model {
 	blogList.SetShowHelp(false)
 	blogList.SetFilteringEnabled(true)
 	blogList.Styles.Title = styles.Title
+	blogList.Styles.TitleBar = lipgloss.NewStyle()
 
 	return Model{
 		menu: []string{

@@ -198,6 +198,9 @@ func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if selectedItem == "Exit" {
 			return m, tea.Quit
 		}
+		if selectedItem == "Home" {
+			return m, nil
+		}
 		// Transition to contentView for interaction
 		m.state = contentView
 		if selectedItem != "Projects" && selectedItem != "Blogs" {

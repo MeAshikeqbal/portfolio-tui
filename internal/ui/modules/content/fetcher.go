@@ -136,7 +136,6 @@ func Fetch(client *sanity.Client) Payload {
 
 	if skills, err := client.GetSkills(); err == nil && len(skills) > 0 {
 		var sb strings.Builder
-		sb.WriteString("💻 Skills\n\n")
 		for _, s := range skills {
 			if s.Name != "" {
 				sb.WriteString(fmt.Sprintf("  • %s\n", s.Name))
@@ -153,7 +152,6 @@ func Fetch(client *sanity.Client) Payload {
 
 	if experiences, err := client.GetExperiences(); err == nil && len(experiences) > 0 {
 		var sb strings.Builder
-		sb.WriteString("💼 Experience\n\n")
 		for _, e := range experiences {
 			if e.Year != "" {
 				sb.WriteString(fmt.Sprintf("[%s]\n", e.Year))
@@ -178,7 +176,6 @@ func Fetch(client *sanity.Client) Payload {
 
 	if educations, err := client.GetEducation(); err == nil && len(educations) > 0 {
 		var sb strings.Builder
-		sb.WriteString("🎓 Education\n\n")
 		for _, e := range educations {
 			if e.Year != "" {
 				sb.WriteString(fmt.Sprintf("[%s]\n", e.Year))
@@ -216,7 +213,6 @@ func Fetch(client *sanity.Client) Payload {
 
 	if contacts, err := client.GetContacts(); err == nil {
 		var sb strings.Builder
-		sb.WriteString("📫 Contact Information\n\n")
 		for _, c := range contacts {
 			sb.WriteString(fmt.Sprintf("%s:\n  %s\n\n", c.Platform, c.Value))
 		}
