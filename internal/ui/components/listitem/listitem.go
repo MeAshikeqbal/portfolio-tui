@@ -15,6 +15,15 @@ func (i ProjectItem) FilterValue() string { return i.Data.Title }
 func (i ProjectItem) Title() string       { return i.Data.Title }
 func (i ProjectItem) Description() string {
 	desc := i.Data.Description
+	if i.Data.PublishedAt != "" {
+		desc += " • " + formatDate(i.Data.PublishedAt)
+	}
+	if i.Data.GitHub != "" {
+		desc += " • GitHub"
+	}
+	if i.Data.URL != "" {
+		desc += " • Live"
+	}
 	if len(i.Data.Technologies) > 0 {
 		desc += " • " + strings.Join(i.Data.Technologies, ", ")
 	}

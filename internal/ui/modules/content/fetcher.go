@@ -93,6 +93,21 @@ func Fetch(client *sanity.Client) Payload {
 		for i, p := range fetchedProjects {
 			sb.WriteString(fmt.Sprintf("%d. %s\n", i+1, p.Title))
 			sb.WriteString(fmt.Sprintf("   %s\n", p.Description))
+			if p.PublishedAt != "" {
+				sb.WriteString(fmt.Sprintf("   Published: %s\n", blogmodule.FormatDate(p.PublishedAt)))
+			}
+			if p.GitHub != "" {
+				sb.WriteString(fmt.Sprintf("   GitHub: %s\n", p.GitHub))
+			}
+			if p.URL != "" {
+				sb.WriteString(fmt.Sprintf("   Live URL: %s\n", p.URL))
+			}
+			if p.GitHubData != nil {
+				sb.WriteString(fmt.Sprintf("   Stats: %d stars, %d commits\n", p.GitHubData.Stars, p.GitHubData.Commits))
+				if p.GitHubData.License != "" {
+					sb.WriteString(fmt.Sprintf("   License: %s\n", p.GitHubData.License))
+				}
+			}
 			if len(p.Technologies) > 0 {
 				sb.WriteString(fmt.Sprintf("   Technologies: %s\n", strings.Join(p.Technologies, ", ")))
 			}

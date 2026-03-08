@@ -46,10 +46,33 @@ type QueryResponse struct {
 
 // Project represents a project from Sanity
 type Project struct {
-	ID          string `json:"_id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Technologies []string `json:"technologies"`
+	ID           string      `json:"_id"`
+	Title        string      `json:"title"`
+	Slug         Slug        `json:"slug"`
+	Description  string      `json:"description"`
+	MainImage    MainImage   `json:"mainImage"`
+	PublishedAt  string      `json:"publishedAt"`
+	GitHub       string      `json:"github"`
+	URL          string      `json:"url"`
+	GitHubData   *GitHubData `json:"githubData"`
+	Technologies []string    `json:"technologies"`
+}
+
+// Slug represents a Sanity slug object.
+type Slug struct {
+	Current string `json:"current"`
+}
+
+// MainImage represents a Sanity image object with custom fields.
+type MainImage struct {
+	Alt string `json:"alt"`
+}
+
+// GitHubData stores optional GitHub metadata for a project.
+type GitHubData struct {
+	Stars   int    `json:"stars"`
+	Commits int    `json:"commits"`
+	License string `json:"license"`
 }
 
 // Skill represents a skill category from Sanity
@@ -210,19 +233,19 @@ func (c *Client) GetContacts() ([]Contact, error) {
 			contacts = append(contacts, c)
 		}
 	}
-	
+
 	// If no contacts from Sanity, use environment variables
 	if len(contacts) == 0 {
 		contacts = getContactsFromEnv()
 	}
-	
+
 	return contacts, nil
 }
 
 // getContactsFromEnv builds contact list from environment variables
 func getContactsFromEnv() []Contact {
 	contacts := []Contact{}
-	
+
 	// Email
 	if email := os.Getenv("CONTACT_EMAIL"); email != "" {
 		contacts = append(contacts, Contact{
@@ -231,7 +254,7 @@ func getContactsFromEnv() []Contact {
 			URL:      "mailto:" + email,
 		})
 	}
-	
+
 	// Phone
 	if phone := os.Getenv("CONTACT_PHONE"); phone != "" {
 		contacts = append(contacts, Contact{
@@ -240,7 +263,7 @@ func getContactsFromEnv() []Contact {
 			URL:      "tel:" + phone,
 		})
 	}
-	
+
 	// GitHub
 	if github := os.Getenv("SOCIAL_GITHUB"); github != "" {
 		contacts = append(contacts, Contact{
@@ -249,7 +272,7 @@ func getContactsFromEnv() []Contact {
 			URL:      github,
 		})
 	}
-	
+
 	// LinkedIn
 	if linkedin := os.Getenv("SOCIAL_LINKEDIN"); linkedin != "" {
 		contacts = append(contacts, Contact{
@@ -258,7 +281,7 @@ func getContactsFromEnv() []Contact {
 			URL:      linkedin,
 		})
 	}
-	
+
 	// Twitter
 	if twitter := os.Getenv("SOCIAL_TWITTER"); twitter != "" {
 		contacts = append(contacts, Contact{
@@ -267,7 +290,7 @@ func getContactsFromEnv() []Contact {
 			URL:      twitter,
 		})
 	}
-	
+
 	// Website
 	if website := os.Getenv("SOCIAL_WEBSITE"); website != "" {
 		contacts = append(contacts, Contact{
@@ -276,7 +299,7 @@ func getContactsFromEnv() []Contact {
 			URL:      website,
 		})
 	}
-	
+
 	// YouTube
 	if youtube := os.Getenv("SOCIAL_YOUTUBE"); youtube != "" {
 		contacts = append(contacts, Contact{
@@ -285,7 +308,7 @@ func getContactsFromEnv() []Contact {
 			URL:      youtube,
 		})
 	}
-	
+
 	// Instagram
 	if instagram := os.Getenv("SOCIAL_INSTAGRAM"); instagram != "" {
 		contacts = append(contacts, Contact{
@@ -294,7 +317,7 @@ func getContactsFromEnv() []Contact {
 			URL:      instagram,
 		})
 	}
-	
+
 	// Fallback if no env vars set
 	if len(contacts) == 0 {
 		contacts = []Contact{
@@ -302,7 +325,7 @@ func getContactsFromEnv() []Contact {
 			{Platform: "GitHub", Value: "github.com/MeAshikeqbal", URL: "https://github.com/MeAshikeqbal"},
 		}
 	}
-	
+
 	return contacts
 }
 
