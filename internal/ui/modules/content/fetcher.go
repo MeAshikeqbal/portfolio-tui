@@ -134,16 +134,15 @@ func Fetch(client *sanity.Client) Payload {
 		content["Projects"] = "📡 Fetching projects...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultProjects
 	}
 
-	if skills, err := client.GetSkills(); err == nil {
+	if skills, err := client.GetSkills(); err == nil && len(skills) > 0 {
 		var sb strings.Builder
-		sb.WriteString("💻 Technical Skills\n\n")
+		sb.WriteString("💻 Skills\n\n")
 		for _, s := range skills {
-			sb.WriteString(fmt.Sprintf("%s:\n", s.Category))
-			for _, item := range s.Items {
-				sb.WriteString(fmt.Sprintf("  • %s\n", item))
+			if s.Name != "" {
+				sb.WriteString(fmt.Sprintf("  • %s\n", s.Name))
 			}
-			sb.WriteString("\n")
 		}
+		sb.WriteString("\n")
 		content["Skills"] = sb.String()
 	} else {
 		content["Skills"] = "📡 Fetching skills...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultSkills
@@ -151,7 +150,31 @@ func Fetch(client *sanity.Client) Payload {
 
 	// Sidebar aliases and static sections
 	content["Home"] = defaultHome
-	content["Experience"] = defaultExperience
+
+	if experiences, err := client.GetExperiences(); err == nil && len(experiences) > 0 {
+		var sb strings.Builder
+		sb.WriteString("💼 Experience\n\n")
+		for _, e := range experiences {
+			if e.Year != "" {
+				sb.WriteString(fmt.Sprintf("[%s]\n", e.Year))
+			}
+			for _, w := range e.Works {
+				if w.Name != "" {
+					sb.WriteString(fmt.Sprintf("  %s\n", w.Name))
+				}
+				if w.Company != "" {
+					sb.WriteString(fmt.Sprintf("  @ %s\n", w.Company))
+				}
+				if w.Desc != "" {
+					sb.WriteString(fmt.Sprintf("  %s\n", w.Desc))
+				}
+				sb.WriteString("\n")
+			}
+		}
+		content["Experience"] = sb.String()
+	} else {
+		content["Experience"] = defaultExperience
+	}
 
 	if educations, err := client.GetEducation(); err == nil && len(educations) > 0 {
 		var sb strings.Builder

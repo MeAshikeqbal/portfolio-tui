@@ -76,11 +76,10 @@ type GitHubData struct {
 	License string `json:"license"`
 }
 
-// Skill represents a skill category from Sanity
+// Skill represents a skill from Sanity
 type Skill struct {
-	ID       string   `json:"_id"`
-	Category string   `json:"category"`
-	Items    []string `json:"items"`
+	ID   string `json:"_id"`
+	Name string `json:"name"`
 }
 
 // About represents about content from Sanity
@@ -133,6 +132,20 @@ type Education struct {
 	Degree string `json:"degree"`
 	School string `json:"school"`
 	Desc   string `json:"desc"`
+}
+
+// WorkExperience represents a single work entry within an experience year
+type WorkExperience struct {
+	Name    string `json:"name"`
+	Company string `json:"company"`
+	Desc    string `json:"desc"`
+}
+
+// Experience represents a year group of work experiences from Sanity
+type Experience struct {
+	ID    string          `json:"_id"`
+	Year  string          `json:"year"`
+	Works []WorkExperience `json:"works"`
 }
 
 func NewClient() *Client {
@@ -192,7 +205,7 @@ func (c *Client) GetProjects() ([]Project, error) {
 }
 
 func (c *Client) GetSkills() ([]Skill, error) {
-	query := `*[_type == "skill"]`
+	query := `*[_type == "skills"] | order(name asc)`
 	results, err := c.Query(query)
 	if err != nil {
 		return nil, err
@@ -401,4 +414,30 @@ func (c *Client) GetEducation() ([]Education, error) {
 		}
 	}
 	return educations, nil
+}
+
+func (c *Client) GetExperiences() ([]Experience, error) {
+	query := `*[_type == "experiences"] | order(year desc) {
+		_id,
+		year,
+		"works": works[] {
+			name,
+			company,
+			desc
+		}
+	}`
+	results, err := c.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var experiences []Experience
+	for _, r := range results {
+		data, _ := json.Marshal(r)
+		var e Experience
+		if err := json.Unmarshal(data, &e); err == nil {
+			experiences = append(experiences, e)
+		}
+	}
+	return experiences, nil
 }
