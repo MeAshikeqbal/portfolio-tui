@@ -1,12 +1,16 @@
 package ui
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
+	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -71,119 +75,217 @@ const (
 	contentView
 )
 
+type loadingState int
+
+const (
+	idle loadingState = iota
+	loading
+	loaded
+	failed
+)
+
+// ContentMsg carries fetched content from Sanity
+type ContentMsg struct {
+	data  map[string]string
+	err   error
+}
+
 type Model struct {
-	menu      []string
-	selected  int
-	viewport  viewport.Model
-	help      help.Model
-	keys      keyMap
-	ready     bool
-	state     viewState
-	content   map[string]string
+	menu         []string
+	selected     int
+	viewport     viewport.Model
+	help         help.Model
+	keys         keyMap
+	ready        bool
+	state        viewState
+	content      map[string]string
+	loadingState loadingState
+	error        string
+	sanityClient *sanity.Client
 }
 
 func InitialModel() Model {
-	return Model{
+	m := Model{
 		menu: []string{
 			"Projects",
 			"Skills",
+			"Blog",
 			"About",
 			"Contact",
 			"Exit",
 		},
-		selected: 0,
-		help:     help.New(),
-		keys:     keys,
-		state:    menuView,
-		content:  generateContent(),
+		selected:     0,
+		help:         help.New(),
+		keys:         keys,
+		state:        menuView,
+		content:      make(map[string]string),
+		loadingState: loading,
+		sanityClient: sanity.NewClient(),
+	}
+	return m
+}
+
+// fetchContentCmd initiates fetching content from Sanity
+func fetchContentCmd() tea.Cmd {
+	return func() tea.Msg {
+		client := sanity.NewClient()
+		content := make(map[string]string)
+
+		// Fetch Projects
+		if projects, err := client.GetProjects(); err == nil {
+			var sb strings.Builder
+			sb.WriteString("🚀 Projects\n\n")
+			for i, p := range projects {
+				sb.WriteString(fmt.Sprintf("%d. %s\n", i+1, p.Title))
+				sb.WriteString(fmt.Sprintf("   %s\n", p.Description))
+				if len(p.Technologies) > 0 {
+					sb.WriteString(fmt.Sprintf("   Technologies: %s\n", strings.Join(p.Technologies, ", ")))
+				}
+				sb.WriteString("\n")
+			}
+			content["Projects"] = sb.String()
+		} else {
+			content["Projects"] = "📡 Fetching projects...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultProjects
+		}
+
+		// Fetch Skills
+		if skills, err := client.GetSkills(); err == nil {
+			var sb strings.Builder
+			sb.WriteString("💻 Technical Skills\n\n")
+			for _, s := range skills {
+				sb.WriteString(fmt.Sprintf("%s:\n", s.Category))
+				for _, item := range s.Items {
+					sb.WriteString(fmt.Sprintf("  • %s\n", item))
+				}
+				sb.WriteString("\n")
+			}
+			content["Skills"] = sb.String()
+		} else {
+			content["Skills"] = "📡 Fetching skills...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultSkills
+		}
+
+		// Fetch About
+		if about, err := client.GetAbout(); err == nil {
+			var sb strings.Builder
+			sb.WriteString("👨‍💻 About Me\n\n")
+			sb.WriteString(about.Content)
+			sb.WriteString("\n\n")
+			sb.WriteString(about.Background)
+			content["About"] = sb.String()
+		} else {
+			content["About"] = "📡 Fetching about...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultAbout
+		}
+
+		// Fetch Contact
+		if contacts, err := client.GetContacts(); err == nil {
+			var sb strings.Builder
+			sb.WriteString("📫 Contact Information\n\n")
+			for _, c := range contacts {
+				sb.WriteString(fmt.Sprintf("%s:\n  %s\n\n", c.Platform, c.Value))
+			}
+			content["Contact"] = sb.String()
+		} else {
+			content["Contact"] = "📡 Fetching contact...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultContact
+		}
+
+		// Fetch Blog Posts
+		if posts, err := client.GetPosts(); err == nil {
+			var sb strings.Builder
+			sb.WriteString("📝 Blog Posts\n\n")
+			if len(posts) == 0 {
+				sb.WriteString("No posts published yet.\n")
+			} else {
+				for i, post := range posts {
+					sb.WriteString(fmt.Sprintf("%d. %s\n", i+1, post.Title))
+					
+					// Format published date
+					if post.PublishedAt != "" {
+						sb.WriteString(fmt.Sprintf("   Published: %s\n", formatDate(post.PublishedAt)))
+					}
+					
+					// Show author if available (from dereferenced query)
+					if post.Author != nil {
+						if author, ok := post.Author.(string); ok && author != "" {
+							sb.WriteString(fmt.Sprintf("   Author: %s\n", author))
+						}
+					}
+					
+					// Show categories if available (from dereferenced query)
+					if len(post.Categories) > 0 {
+						var cats []string
+						for _, cat := range post.Categories {
+							if catStr, ok := cat.(string); ok {
+								cats = append(cats, catStr)
+							}
+						}
+						if len(cats) > 0 {
+							sb.WriteString(fmt.Sprintf("   Categories: %s\n", strings.Join(cats, ", ")))
+						}
+					}
+					
+					sb.WriteString("\n")
+				}
+			}
+			content["Blog"] = sb.String()
+		} else {
+			content["Blog"] = "📡 Fetching blog posts...\n\nError connecting to Sanity. Using fallback content.\n\n" + defaultBlog
+		}
+
+		return ContentMsg{data: content, err: nil}
 	}
 }
 
-func generateContent() map[string]string {
-	return map[string]string{
-		"Projects": `🚀 Projects
+// formatDate formats an ISO date string to a more readable format
+func formatDate(isoDate string) string {
+	// Simple formatting - just take the date part (YYYY-MM-DD)
+	if len(isoDate) >= 10 {
+		return isoDate[:10]
+	}
+	return isoDate
+}
 
-1. Portfolio TUI
+var (
+	defaultProjects = `1. Portfolio TUI
    A beautiful terminal-based portfolio application built with Go and Bubble Tea.
-   Technologies: Go, Bubble Tea, Bubbles, Lip Gloss
    
 2. Web Dashboard
-   Modern web dashboard with real-time analytics and data visualization.
-   Technologies: React, TypeScript, D3.js, Node.js
+   Modern web dashboard with real-time analytics.
    
 3. API Gateway
-   High-performance API gateway with authentication and rate limiting.
-   Technologies: Go, Redis, PostgreSQL, Docker
+   High-performance API gateway with authentication.
    
 4. Mobile App
-   Cross-platform mobile application for task management.
-   Technologies: React Native, Firebase, Redux
+   Cross-platform mobile application.
    
 5. CLI Tool
-   Command-line tool for automating development workflows.
-   Technologies: Go, Cobra, Viper
+   Command-line tool for development workflows.`
 
-Each project demonstrates different aspects of software development,
-from frontend to backend, from mobile to CLI applications.`,
-
-		"Skills": `💻 Technical Skills
-
-Programming Languages:
-  • Go - Advanced proficiency in concurrent programming
-  • JavaScript/TypeScript - Full-stack development
-  • Python - Data processing and automation
-  • Rust - Systems programming
-
+	defaultSkills = `Programming Languages:
+  • Go
+  • JavaScript/TypeScript
+  • Python
+  
 Frameworks & Libraries:
-  • Bubble Tea - Terminal user interfaces
-  • React - Modern web applications
-  • Node.js - Backend services
-  • FastAPI - REST APIs
-
+  • Bubble Tea
+  • React
+  • Node.js
+  
 Tools & Technologies:
-  • Docker & Kubernetes - Container orchestration
-  • Git & GitHub - Version control
-  • PostgreSQL & MongoDB - Databases
-  • Redis - Caching and queuing
-  • Linux - System administration
+  • Docker & Kubernetes
+  • PostgreSQL & MongoDB
+  • Redis`
 
-Soft Skills:
-  • Problem solving and critical thinking
-  • Team collaboration and communication
-  • Agile/Scrum methodologies
-  • Technical documentation`,
-
-		"About": `👨‍💻 About Me
-
-Hi! I'm Ashik Eqbal, a passionate software developer with a love for
-building elegant and efficient solutions.
+	defaultAbout = `I'm a passionate software developer with a love for building
+elegant and efficient solutions.
 
 Background:
-I specialize in backend development, terminal applications, and
-developer tools. My journey in software development started with
-curiosity about how things work under the hood, which led me to
-explore systems programming and low-level optimizations.
-
-Interests:
-  • Open source contribution
-  • Terminal-based applications
-  • Developer experience and tooling
-  • Performance optimization
-  • Clean code and architecture
+I specialize in backend development, terminal applications,
+and developer tools.
 
 Philosophy:
-I believe in writing code that is not only functional but also
-maintainable and enjoyable to work with. Good software should be
-both powerful and elegant.
+Good software should be both powerful and elegant.`
 
-Currently working on building developer tools that make programming
-more productive and fun!`,
-
-		"Contact": `📫 Contact Information
-
-Feel free to reach out through any of these channels:
-
-Email:
+	defaultContact = `Email:
   ashik@example.com
 
 GitHub:
@@ -193,22 +295,23 @@ LinkedIn:
   linkedin.com/in/ashikeqbal
 
 Twitter:
-  @ashikeqbal
+  @ashikeqbal`
 
-Website:
-  ashikeqbal.dev
-
-I'm always open to interesting conversations about technology,
-collaboration opportunities, or just to connect with fellow developers.
-
-Response time: Usually within 24-48 hours.
-
-Looking forward to hearing from you!`,
-	}
-}
+	defaultBlog = `1. Welcome to My Blog
+   Learn about my journey in software development
+   Published: 2024-01-15
+   
+2. Building Terminal Applications with Go
+   A deep dive into Bubble Tea framework
+   Published: 2024-01-10
+   
+3. Why I Love Open Source
+   Contributing to the community
+   Published: 2024-01-05`
+)
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return fetchContentCmd()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -218,6 +321,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
+	case ContentMsg:
+		// Handle fetched content from Sanity
+		if msg.err != nil {
+			m.loadingState = failed
+			m.error = msg.err.Error()
+		} else {
+			m.content = msg.data
+			m.loadingState = loaded
+		}
+
 	case tea.WindowSizeMsg:
 		headerHeight := lipgloss.Height(m.headerView())
 		footerHeight := lipgloss.Height(m.footerView())
@@ -288,7 +401,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) headerView() string {
-	title := styles.Title.Render("Ashik Eqbal – Portfolio")
+	name := os.Getenv("FULL_NAME")
+	if name == "" {
+		name = "Ashik Eqbal"
+	}
+	
+	tagline := os.Getenv("TAGLINE")
+	if tagline == "" {
+		tagline = "Portfolio"
+	}
+	
+	title := styles.Title.Render(name + " – " + tagline)
 	if m.state == contentView {
 		title += " > " + styles.SelectedItem.Render(m.menu[m.selected])
 	}
@@ -305,6 +428,14 @@ func (m Model) footerView() string {
 func (m Model) View() string {
 	if !m.ready {
 		return "\n  Initializing..."
+	}
+
+	if m.loadingState == loading {
+		return "\n  📡 Loading content from Sanity...\n\n  Please wait..."
+	}
+
+	if m.loadingState == failed {
+		return fmt.Sprintf("\n  ❌ Error: %s\n\n  Using fallback content...", m.error)
 	}
 
 	header := m.headerView()
