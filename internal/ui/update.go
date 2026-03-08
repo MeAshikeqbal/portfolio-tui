@@ -20,6 +20,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
+	case introStageMsg:
+		if msg.stage > m.introStage {
+			m.introStage = msg.stage
+		}
+
+	case introDoneMsg:
+		m.introTimerDone = true
+		maybeCompleteIntro(&m)
+
 	case ContentMsg:
 		if msg.err != nil {
 			m.loadingState = failed
@@ -46,6 +55,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.blogList.SetItems(items)
 			}
 		}
+
+		maybeCompleteIntro(&m)
 
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)

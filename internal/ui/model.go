@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/keymap"
@@ -50,12 +52,19 @@ type Model struct {
 	help                  help.Model
 	keys                  keymap.Map
 	ready                 bool
+	introComplete         bool
+	introStage            int
+	introTimerDone        bool
 	state                 viewState
 	content               map[string]string
 	projects              []sanity.Project
 	posts                 []sanity.Post
 	selectedPost          *sanity.Post
 	selectedProject       *sanity.Project
+	portfolioOwner        string
+	sessionUserIP         string
+	sessionTerminal       string
+	sessionID             string
 	loadingState          loadingState
 	error                 string
 	sanityClient          *sanity.Client
@@ -90,19 +99,32 @@ func InitialModel() Model {
 			"Contact",
 			"Exit",
 		},
-		selected:     0,
-		projectsList: projectsList,
-		blogList:     blogList,
-		help:         help.New(),
-		keys:         keymap.Default(),
-		state:        menuView,
-		content:      make(map[string]string),
-		loadingState: loading,
-		sanityClient: sanity.NewClient(),
-		spinner:      s,
+		selected:        0,
+		projectsList:    projectsList,
+		blogList:        blogList,
+		help:            help.New(),
+		keys:            keymap.Default(),
+		introComplete:   false,
+		introStage:      0,
+		introTimerDone:  false,
+		state:           menuView,
+		content:         make(map[string]string),
+		portfolioOwner:  resolvePortfolioOwner(),
+		sessionUserIP:   resolveMaskedUserIP(),
+		sessionTerminal: resolveTerminalName(),
+		sessionID:       generateSessionID(),
+		loadingState:    loading,
+		sanityClient:    sanity.NewClient(),
+		spinner:         s,
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(fetchContentCmd(), m.spinner.Tick)
+	return tea.Batch(
+		fetchContentCmd(),
+		m.spinner.Tick,
+		introStageCmd(1, 350*time.Millisecond),
+		introStageCmd(2, 750*time.Millisecond),
+		introDelayCmd(),
+	)
 }

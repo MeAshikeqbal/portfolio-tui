@@ -21,16 +21,16 @@ func (m Model) headerView() string {
 		tagline = "Portfolio"
 	}
 
-	// Blog detail view has a special header
+	// Blog detail view has a special header with breadcrumb
 	if m.state == blogDetailView && m.selectedPost != nil {
-		title := styles.BlogTitleStyle.Render(m.selectedPost.Title)
+		title := styles.BlogTitleStyle.Render("Blogs > " + m.selectedPost.Title)
 		line := strings.Repeat("─", max(0, m.blogDetailViewport.Width-lipgloss.Width(title)))
 		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
 	}
 
-	// Project detail view has a special header
+	// Project detail view has a special header with breadcrumb
 	if m.state == projectDetailView && m.selectedProject != nil {
-		title := styles.BlogTitleStyle.Render(m.selectedProject.Title)
+		title := styles.BlogTitleStyle.Render("Projects > " + m.selectedProject.Title)
 		line := strings.Repeat("─", max(0, m.projectDetailViewport.Width-lipgloss.Width(title)))
 		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
 	}
@@ -82,16 +82,57 @@ func (m Model) renderMenu() string {
 
 // View renders the entire view
 func (m Model) View() string {
-	if !m.ready {
-		return "\n  Initializing..."
+	if !m.introComplete {
+		logo := "  _ _                 _     _ _         _\n" +
+			" (_) |               | |   (_) |       | |\n" +
+			"  _| |_ ___  __ _ ___| |__  _| | __  __| | _____   __\n" +
+			" | | __/ __|/ _` / __| '_ \\| | |/ / / _` |/ _ \\ \\ / /\n" +
+			" | | |_\\__ \\ (_| \\__ \\ | | | |   < | (_| |  __/\\ V /\n" +
+			" |_|\\__|___/\\__,_|___/_| |_|_|_|\\_(_)__,_|\\___| \\_/"
+
+		var sb strings.Builder
+		sb.WriteString("\n")
+		sb.WriteString(logo)
+
+		if m.introStage >= 1 {
+			sb.WriteString("\n\n")
+			sb.WriteString("Welcome to ")
+			sb.WriteString(m.portfolioOwner)
+			sb.WriteString("'s Terminal Portfolio\n\n")
+			sb.WriteString("Session Info\n")
+			sb.WriteString("----------------------------\n")
+			sb.WriteString("User IP: ")
+			sb.WriteString(m.sessionUserIP)
+			sb.WriteString("\n")
+			sb.WriteString("Terminal: ")
+			sb.WriteString(m.sessionTerminal)
+			sb.WriteString("\n")
+			sb.WriteString("Session ID: ")
+			sb.WriteString(m.sessionID)
+			sb.WriteString("\n")
+		}
+
+		if m.introStage >= 2 {
+			sb.WriteString("\n")
+			sb.WriteString("Loading portfolio...\n")
+			sb.WriteString(m.spinner.View())
+
+			if m.loadingState == loading {
+				sb.WriteString(" Fetching content....\n")
+			} else if m.loadingState == loaded {
+				sb.WriteString(" Content loaded. Launching interface\n")
+			} else if m.loadingState == failed {
+				sb.WriteString(" Failed to fetch some content, using fallback data\n")
+			} else {
+				sb.WriteString(" Initializing interface\n")
+			}
+		}
+
+		return sb.String()
 	}
 
-	if m.loadingState == loading {
-		loadingText := styles.LoadingStyle.Render("Loading content from Sanity...")
-		return fmt.Sprintf("\n\n  %s %s\n\n  %s\n",
-			m.spinner.View(),
-			loadingText,
-			styles.Footer.Render("Fetching projects, skills, blog posts & more..."))
+	if !m.ready {
+		return "\n  Initializing..."
 	}
 
 	if m.loadingState == failed {
