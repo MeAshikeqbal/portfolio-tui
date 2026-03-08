@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/listitem"
+	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/layout"
 	blogmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/blog"
 	projectmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/project"
 
@@ -68,8 +69,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		verticalMarginHeight := headerHeight + footerHeight
 		availableHeight := max(1, msg.Height-verticalMarginHeight)
 
-		// Keep resize logic aligned with shell layout (40% sidebar / 60% content)
-		_, contentWidth := shellWidths(msg.Width)
+		// Keep resize logic aligned with shell layout (25% sidebar / 75% content)
+		_, contentWidth := layout.CalculateShellWidths(msg.Width)
 
 		// Constrain list width to content pane
 		listWidth := max(20, contentWidth-4) // account for padding
