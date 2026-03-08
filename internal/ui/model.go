@@ -64,4 +64,6 @@ type Model struct {
 	error                 string
 	sanityClient          *sanity.Client
 	spinner               spinner.Model
+	showHelpModal         bool
+	termHeight            int
 }

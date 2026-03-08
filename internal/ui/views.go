@@ -6,6 +6,7 @@ import (
 
 	appconfig "github.com/MeAshikeqbal/portfolio-tui/internal/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
+	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/helpmodal"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/menu"
 	uiconfig "github.com/MeAshikeqbal/portfolio-tui/internal/ui/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/layout"
@@ -44,35 +45,30 @@ func (m Model) headerView() string {
 func (m Model) footerView(width int) string {
 	var controls string
 
-	// Build context-specific help text
-	if m.help.ShowAll {
-		controls = m.help.View(m.keys)
-	} else {
-		// Show concise controls based on current state
-		switch m.state {
-		case menuView:
-			selectedItem := m.menu[m.selected]
-			if selectedItem == "Projects" || selectedItem == "Blogs" {
-				controls = "↑/↓ navigate • enter activate • ? help • q quit"
-			} else if selectedItem == "Exit" {
-				controls = "↑/↓ navigate • enter exit • ? help • q quit"
-			} else {
-				controls = "↑/↓ navigate • enter view • ? help • q quit"
-			}
-		case contentView:
-			selectedItem := m.menu[m.selected]
-			if selectedItem == "Projects" || selectedItem == "Blogs" {
-				controls = "↑/↓ navigate • / filter • enter open • esc back • ? help • q quit"
-			} else {
-				controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit"
-			}
-		case blogDetailView:
-			scrollPct := fmt.Sprintf("%3.0f%%", m.blogDetailViewport.ScrollPercent()*100)
-			controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
-		case projectDetailView:
-			scrollPct := fmt.Sprintf("%3.0f%%", m.projectDetailViewport.ScrollPercent()*100)
-			controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
+	// Show concise controls based on current state
+	switch m.state {
+	case menuView:
+		selectedItem := m.menu[m.selected]
+		if selectedItem == "Projects" || selectedItem == "Blogs" {
+			controls = "↑/↓ navigate • enter activate • ? help • q quit"
+		} else if selectedItem == "Exit" {
+			controls = "↑/↓ navigate • enter exit • ? help • q quit"
+		} else {
+			controls = "↑/↓ navigate • enter view • ? help • q quit"
 		}
+	case contentView:
+		selectedItem := m.menu[m.selected]
+		if selectedItem == "Projects" || selectedItem == "Blogs" {
+			controls = "↑/↓ navigate • / filter • enter open • esc back • ? help • q quit"
+		} else {
+			controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit"
+		}
+	case blogDetailView:
+		scrollPct := fmt.Sprintf("%3.0f%%", m.blogDetailViewport.ScrollPercent()*100)
+		controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
+	case projectDetailView:
+		scrollPct := fmt.Sprintf("%3.0f%%", m.projectDetailViewport.ScrollPercent()*100)
+		controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
 	}
 
 	return layout.RenderFooter(controls, width)
@@ -261,5 +257,119 @@ func (m Model) View() string {
 		content = m.renderShellLayout()
 	}
 
-	return header + "\n" + content + footer
+	mainView := header + "\n" + content + footer
+
+	// Render help modal as a full-screen overlay (no appending — preserves layout)
+	if m.showHelpModal {
+		helpText := m.getHelpContent()
+		modal := helpmodal.New(m.help.Width, m.termHeight, helpText)
+		return modal.View()
+	}
+
+	return mainView
+}
+
+// getHelpContent generates context-aware help text
+func (m Model) getHelpContent() string {
+	titleStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("226")).
+		Bold(true)
+
+	keyStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("51")).
+		Bold(true)
+
+	descStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("250"))
+
+	divider := strings.Repeat("─", 40)
+
+	var help strings.Builder
+
+	help.WriteString(titleStyle.Render("KEYBOARD SHORTCUTS"))
+	help.WriteString("\n")
+	help.WriteString(divider)
+	help.WriteString("\n\n")
+
+	switch m.state {
+	case menuView:
+		help.WriteString(titleStyle.Render("Navigation"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  ↑/↓"))
+		help.WriteString("    " + descStyle.Render("Navigate menu"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  enter"))
+		help.WriteString("   " + descStyle.Render("View selected section"))
+		help.WriteString("\n\n")
+
+	case contentView:
+		selectedItem := m.menu[m.selected]
+		if selectedItem == "Projects" || selectedItem == "Blogs" {
+			help.WriteString(titleStyle.Render("Navigation"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  ↑/↓"))
+			help.WriteString("    " + descStyle.Render("Navigate items"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  enter"))
+			help.WriteString("   " + descStyle.Render("View details"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  /"))
+			help.WriteString("      " + descStyle.Render("Filter list"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  esc"))
+			help.WriteString("    " + descStyle.Render("Back to menu"))
+			help.WriteString("\n\n")
+		} else {
+			help.WriteString(titleStyle.Render("Scrolling"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  ↑/↓"))
+			help.WriteString("      " + descStyle.Render("Scroll up/down"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  pgup/pgdn"))
+			help.WriteString("  " + descStyle.Render("Page up/down"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  home/end"))
+			help.WriteString("   " + descStyle.Render("Jump to top/bottom"))
+			help.WriteString("\n\n")
+
+			help.WriteString(titleStyle.Render("Navigation"))
+			help.WriteString("\n")
+			help.WriteString(keyStyle.Render("  esc"))
+			help.WriteString("    " + descStyle.Render("Back to menu"))
+			help.WriteString("\n\n")
+		}
+
+	case blogDetailView, projectDetailView:
+		help.WriteString(titleStyle.Render("Scrolling"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  ↑/↓"))
+		help.WriteString("      " + descStyle.Render("Scroll up/down"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  pgup/pgdn"))
+		help.WriteString("  " + descStyle.Render("Page up/down"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  home/end"))
+		help.WriteString("   " + descStyle.Render("Jump to top/bottom"))
+		help.WriteString("\n\n")
+
+		help.WriteString(titleStyle.Render("Navigation"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  esc"))
+		help.WriteString("    " + descStyle.Render("Back to view"))
+		help.WriteString("\n\n")
+	}
+
+	help.WriteString(divider)
+	help.WriteString("\n")
+	help.WriteString(titleStyle.Render("Global"))
+	help.WriteString("\n")
+	help.WriteString(keyStyle.Render("  ?"))
+	help.WriteString("       " + descStyle.Render("Toggle help"))
+	help.WriteString("\n")
+	help.WriteString(keyStyle.Render("  q"))
+	help.WriteString("       " + descStyle.Render("Quit"))
+	help.WriteString("\n\n")
+	help.WriteString(descStyle.Render("Press ? or Esc to close"))
+
+	return help.String()
 }

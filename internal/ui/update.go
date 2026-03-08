@@ -105,6 +105,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.blogList.SetWidth(listWidth)
 		m.blogList.SetHeight(availableHeight)
 		m.help.Width = msg.Width
+		m.termHeight = msg.Height
 
 	case tea.MouseMsg:
 		if m.state == blogDetailView {
@@ -136,6 +137,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
+		// Handle help modal close on Esc or ?
+		if m.showHelpModal {
+			if msg.String() == "esc" || key.Matches(msg, m.keys.Help) {
+				m.showHelpModal = false
+				return m, nil
+			}
+			// Allow quit even while modal is open
+			if key.Matches(msg, m.keys.Quit) {
+				return m, tea.Quit
+			}
+			// Ignore other keys while modal is open
+			return m, nil
+		}
+
 		switch m.state {
 		case menuView:
 			return m.updateMenuView(msg)
@@ -169,7 +184,7 @@ func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoTop()
 		}
 	case key.Matches(msg, m.keys.Help):
-		m.help.ShowAll = !m.help.ShowAll
+		m.showHelpModal = !m.showHelpModal
 	case msg.String() == "enter":
 		selectedItem := m.menu[m.selected]
 		if selectedItem == "Exit" {
@@ -198,7 +213,7 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Quit):
 				return m, tea.Quit
 			case key.Matches(msg, m.keys.Help):
-				m.help.ShowAll = !m.help.ShowAll
+				m.showHelpModal = !m.showHelpModal
 				return m, nil
 			case msg.String() == "enter":
 				if selected := m.projectsList.SelectedItem(); selected != nil {
@@ -227,7 +242,7 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, m.keys.Quit):
 				return m, tea.Quit
 			case key.Matches(msg, m.keys.Help):
-				m.help.ShowAll = !m.help.ShowAll
+				m.showHelpModal = !m.showHelpModal
 				return m, nil
 			case msg.String() == "enter":
 				if selected := m.blogList.SelectedItem(); selected != nil {
@@ -254,7 +269,7 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 	case key.Matches(msg, m.keys.Help):
-		m.help.ShowAll = !m.help.ShowAll
+		m.showHelpModal = !m.showHelpModal
 	}
 
 	var cmd tea.Cmd
@@ -271,7 +286,7 @@ func (m Model) updateBlogDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 	case key.Matches(msg, m.keys.Help):
-		m.help.ShowAll = !m.help.ShowAll
+		m.showHelpModal = !m.showHelpModal
 		return m, nil
 	case key.Matches(msg, m.keys.Home):
 		m.blogDetailViewport.GotoTop()
@@ -295,7 +310,7 @@ func (m Model) updateProjectDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 	case key.Matches(msg, m.keys.Help):
-		m.help.ShowAll = !m.help.ShowAll
+		m.showHelpModal = !m.showHelpModal
 		return m, nil
 	case key.Matches(msg, m.keys.Home):
 		m.projectDetailViewport.GotoTop()
