@@ -33,5 +33,11 @@ bin/
 dist/
 portfolio-tui
 
+# Personal configuration files (keep config.example.yaml)
+config.yaml
+config.yml
+.portfolio-tui.yaml
+.portfolio-tui.yml
+
 # temporary files
 tmp/

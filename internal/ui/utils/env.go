@@ -1,30 +1,23 @@
 package utils
 
-import "os"
+import "github.com/MeAshikeqbal/portfolio-tui/internal/config"
 
-// GetFullName returns the full name from environment or default
+// GetFullName returns the full name from config
 func GetFullName() string {
-	name := os.Getenv("FULL_NAME")
-	if name == "" {
-		return "Ashik Eqbal"
-	}
-	return name
+	return config.Get().Owner.FullName
 }
 
-// GetTagline returns the tagline from environment or default
+// GetTagline returns the tagline from config
 func GetTagline() string {
-	tagline := os.Getenv("TAGLINE")
-	if tagline == "" {
-		return "Portfolio"
-	}
-	return tagline
+	return config.Get().Owner.Tagline
 }
 
-// GetHost returns the host from environment or default
+// GetHost returns the host from config
 func GetHost() string {
-	host := os.Getenv("HOST")
-	if host == "" {
-		return "localhost"
-	}
-	return host
+	return config.Get().Network.Host
+}
+
+// GetUsername returns the username from config
+func GetUsername() string {
+	return config.Get().Owner.Username
 }

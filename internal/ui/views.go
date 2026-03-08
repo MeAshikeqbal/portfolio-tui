@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	appconfig "github.com/MeAshikeqbal/portfolio-tui/internal/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/menu"
-	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/config"
+	uiconfig "github.com/MeAshikeqbal/portfolio-tui/internal/ui/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/layout"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/neofetch"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/utils"
@@ -78,7 +79,8 @@ func (m Model) footerView(width int) string {
 }
 
 func (m Model) renderSidebar(width, height int) string {
-	title := styles.SidebarTitle.Render("PORTFOLIO")
+	cfg := appconfig.Get()
+	title := styles.SidebarTitle.Render(cfg.Branding.SidebarTitle)
 	logo := neofetch.RenderSidebarLogo(width, m.portfolioOwner)
 	body := menu.RenderMenu(m.menu, m.selected)
 
@@ -167,11 +169,11 @@ func (m Model) renderShellLayout() string {
 	termHeight := m.viewport.Height
 
 	// Ensure minimum terminal size
-	if termWidth < config.MinTerminalWidth {
+	if termWidth < uiconfig.MinTerminalWidth {
 		return layout.SmallTerminalWidthWarning(termWidth)
 	}
 
-	if termHeight < config.MinContentHeight {
+	if termHeight < uiconfig.MinContentHeight {
 		return layout.SmallTerminalHeightWarning(termWidth)
 	}
 
@@ -243,7 +245,7 @@ func (m Model) View() string {
 		return fmt.Sprintf("\n  ❌ Error: %s\n\n  Using fallback content...", m.error)
 	}
 
-	if m.viewport.Height > 0 && m.viewport.Height < config.MinContentHeight {
+	if m.viewport.Height > 0 && m.viewport.Height < uiconfig.MinContentHeight {
 		return layout.SmallTerminalHeightWarning(m.help.Width)
 	}
 

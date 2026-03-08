@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MeAshikeqbal/portfolio-tui/internal/config"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -38,7 +39,7 @@ func maybeCompleteIntro(m *Model) {
 }
 
 func resolvePortfolioOwner() string {
-	name := os.Getenv("FULL_NAME")
+	name := config.Get().Owner.FullName
 	if strings.TrimSpace(name) == "" {
 		return "Ashik Eqbal"
 	}

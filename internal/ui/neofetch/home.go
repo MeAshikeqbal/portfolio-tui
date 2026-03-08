@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MeAshikeqbal/portfolio-tui/internal/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/utils"
@@ -13,20 +14,24 @@ import (
 // RenderHome renders the neofetch-style home screen
 func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Project, posts []sanity.Post, sessionTerminal, sessionID string) string {
 	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
-	logo := strings.Join([]string{
-		"        /\\",
-		"       /  \\",
-		"      / /\\ \\",
-		"     / ____ \\",
-		"    /_/    \\_\\",
-	}, "\n")
+	// Load logo and config
+	cfg := config.Get()
+	logo := cfg.Branding.AsciiLogo
 
-	owner := strings.ToLower(strings.ReplaceAll(portfolioOwner, " ", ""))
-	if owner == "" {
-		owner = "user"
+	username := utils.GetUsername()
+	if strings.TrimSpace(username) == "" {
+		username = strings.ToLower(strings.ReplaceAll(portfolioOwner, " ", ""))
+	}
+	if strings.TrimSpace(username) == "" {
+		username = "user"
 	}
 
-	title := owner + "@portfolio-tui"
+	host := utils.GetHost()
+	if strings.TrimSpace(host) == "" {
+		host = "localhost"
+	}
+
+	title := username + "@" + host
 	if len(title) > 40 {
 		title = title[:37] + "..."
 	}
@@ -34,8 +39,8 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 	projectsCount := fmt.Sprintf("%d", len(projects))
 	postsCount := fmt.Sprintf("%d", len(posts))
 
-	// Get host from environment
-	host := utils.GetHost()
+	// Get host from config
+	host = utils.GetHost()
 
 	// Truncate session terminal name if too long
 	termName := sessionTerminal
@@ -43,17 +48,17 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 		termName = termName[:27] + "..."
 	}
 
-	// Role/tagline
-	tagline := "Developer • DevOps • Homelab Builder"
+	// Use role/tagline from config
+	roleTagline := cfg.Owner.Role
 
 	infoLines := []string{
 		styles.NeoTitle.Render(title),
 		styles.NeoSeparator.Render(strings.Repeat("─", min(len(title), 40))),
-		styles.NeoLabel.Render(tagline),
+		styles.NeoLabel.Render(roleTagline),
 		"",
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("App"), "portfolio-tui"),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Version"), "v1.0"),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Runtime"), "Bubble Tea"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("App"), cfg.App.Name),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Version"), cfg.App.Version),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Runtime"), cfg.App.Runtime),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Host"), host),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("TERM"), termName),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Session"), sessionID),

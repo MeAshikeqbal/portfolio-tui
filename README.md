@@ -1,4 +1,14 @@
 # Portfolio TUI
+## ✨ Personalization
+
+Make this portfolio your own! Copy `config.example.yaml` to `config.yaml` and customize:
+- Your name, username, and role
+- App branding and version
+- ASCII logos and styling
+- Network configuration
+
+See [CONFIG.md](CONFIG.md) for detailed customization instructions.
+
 
 A beautiful terminal-based portfolio application built with Go and Bubble Tea, with dynamic content from Sanity CMS.
 
@@ -41,32 +51,16 @@ go build -o portfolio-tui
 
 ## Environment Variables
 
-Create a `.env` file with your Sanity project details and personal information:
+Create a `.env` file with your Sanity project details:
 
 ```env
 # Sanity CMS Configuration
 SANITY_PROJECT_ID=your_project_id
 SANITY_DATASET=production
 SANITY_API_VERSION=2024-12-21
-
-# Personal Information
-FULL_NAME=Your Name
-TAGLINE=Your Professional Title
-
-# Contact Information
-CONTACT_EMAIL=your.email@example.com
-CONTACT_PHONE=+1234567890
-
-# Social Links (leave blank to hide)
-SOCIAL_GITHUB=https://github.com/yourusername
-SOCIAL_LINKEDIN=https://linkedin.com/in/yourprofile
-SOCIAL_TWITTER=https://twitter.com/yourhandle
-SOCIAL_WEBSITE=https://yourwebsite.com
-SOCIAL_YOUTUBE=
-SOCIAL_INSTAGRAM=
 ```
 
-**Note:** Contact information is managed via `.env` file - no need to create separate Sanity documents for social links!
+Personal/profile/contact/social information now lives in `config.yaml` (see `config.example.yaml`).
 
 ## Sanity Schema Setup
 

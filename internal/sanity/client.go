@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/MeAshikeqbal/portfolio-tui/internal/config"
 	"github.com/joho/godotenv"
 )
 
@@ -234,20 +235,21 @@ func (c *Client) GetContacts() ([]Contact, error) {
 		}
 	}
 
-	// If no contacts from Sanity, use environment variables
+	// If no contacts from Sanity, use config values
 	if len(contacts) == 0 {
-		contacts = getContactsFromEnv()
+		contacts = getContactsFromConfig()
 	}
 
 	return contacts, nil
 }
 
-// getContactsFromEnv builds contact list from environment variables
-func getContactsFromEnv() []Contact {
+// getContactsFromConfig builds contact list from config values.
+func getContactsFromConfig() []Contact {
+	cfg := config.Get()
 	contacts := []Contact{}
 
 	// Email
-	if email := os.Getenv("CONTACT_EMAIL"); email != "" {
+	if email := cfg.Contact.Email; email != "" {
 		contacts = append(contacts, Contact{
 			Platform: "Email",
 			Value:    email,
@@ -256,7 +258,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// Phone
-	if phone := os.Getenv("CONTACT_PHONE"); phone != "" {
+	if phone := cfg.Contact.Phone; phone != "" {
 		contacts = append(contacts, Contact{
 			Platform: "Phone",
 			Value:    phone,
@@ -265,7 +267,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// GitHub
-	if github := os.Getenv("SOCIAL_GITHUB"); github != "" {
+	if github := cfg.Social.GitHub; github != "" {
 		contacts = append(contacts, Contact{
 			Platform: "GitHub",
 			Value:    github,
@@ -274,7 +276,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// LinkedIn
-	if linkedin := os.Getenv("SOCIAL_LINKEDIN"); linkedin != "" {
+	if linkedin := cfg.Social.LinkedIn; linkedin != "" {
 		contacts = append(contacts, Contact{
 			Platform: "LinkedIn",
 			Value:    linkedin,
@@ -283,7 +285,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// Twitter
-	if twitter := os.Getenv("SOCIAL_TWITTER"); twitter != "" {
+	if twitter := cfg.Social.Twitter; twitter != "" {
 		contacts = append(contacts, Contact{
 			Platform: "Twitter",
 			Value:    twitter,
@@ -292,7 +294,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// Website
-	if website := os.Getenv("SOCIAL_WEBSITE"); website != "" {
+	if website := cfg.Social.Website; website != "" {
 		contacts = append(contacts, Contact{
 			Platform: "Website",
 			Value:    website,
@@ -301,7 +303,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// YouTube
-	if youtube := os.Getenv("SOCIAL_YOUTUBE"); youtube != "" {
+	if youtube := cfg.Social.YouTube; youtube != "" {
 		contacts = append(contacts, Contact{
 			Platform: "YouTube",
 			Value:    youtube,
@@ -310,7 +312,7 @@ func getContactsFromEnv() []Contact {
 	}
 
 	// Instagram
-	if instagram := os.Getenv("SOCIAL_INSTAGRAM"); instagram != "" {
+	if instagram := cfg.Social.Instagram; instagram != "" {
 		contacts = append(contacts, Contact{
 			Platform: "Instagram",
 			Value:    instagram,
@@ -318,7 +320,7 @@ func getContactsFromEnv() []Contact {
 		})
 	}
 
-	// Fallback if no env vars set
+	// Fallback if no config values are set
 	if len(contacts) == 0 {
 		contacts = []Contact{
 			{Platform: "Email", Value: "ashik@example.com", URL: "mailto:ashik@example.com"},
