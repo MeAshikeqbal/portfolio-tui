@@ -9,6 +9,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const (
+	sidebarWidth     = 30
+	minContentWidth  = 50
+	maxContentWidth  = 120
+	minTerminalWidth = sidebarWidth + minContentWidth + 6
+	minHeight        = 20
+)
+
 // headerView renders the header based on current state
 func (m Model) headerView() string {
 	name := os.Getenv("FULL_NAME")
@@ -21,47 +29,69 @@ func (m Model) headerView() string {
 		tagline = "Portfolio"
 	}
 
-	// Blog detail view has a special header with breadcrumb
+	// Blog detail view breadcrumb
 	if m.state == blogDetailView && m.selectedPost != nil {
-		title := styles.BlogTitleStyle.Render("Blogs > " + m.selectedPost.Title)
-		line := strings.Repeat("─", max(0, m.blogDetailViewport.Width-lipgloss.Width(title)))
-		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
+		title := styles.Title.Render(name + " – " + tagline + " > Blogs > " + m.selectedPost.Title)
+		return title + "\n"
 	}
 
-	// Project detail view has a special header with breadcrumb
+	// Project detail view breadcrumb
 	if m.state == projectDetailView && m.selectedProject != nil {
-		title := styles.BlogTitleStyle.Render("Projects > " + m.selectedProject.Title)
-		line := strings.Repeat("─", max(0, m.projectDetailViewport.Width-lipgloss.Width(title)))
-		return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
+		title := styles.Title.Render(name + " – " + tagline + " > Projects > " + m.selectedProject.Title)
+		return title + "\n"
 	}
 
-	title := styles.Title.Render(name + " – " + tagline)
-	if m.state == contentView {
-		title += " > " + styles.SelectedItem.Render(m.menu[m.selected])
+	// For menuView and contentView, show consistent header
+	if m.state == menuView || m.state == contentView {
+		selectedItem := m.menu[m.selected]
+		if selectedItem == "Home" {
+			// Home page doesn't show header (neofetch style)
+			return ""
+		}
+		// All other pages show: Name - Portfolio > Section
+		title := styles.Title.Render(name + " – " + tagline + " > " + selectedItem)
+		return title + "\n"
 	}
-	return title + "\n"
+
+	return ""
 }
 
-// footerView renders the footer based on current state
+// footerView renders the footer with consistent controls
 func (m Model) footerView() string {
+	var controls string
+
+	// Build context-specific help text
 	if m.help.ShowAll {
-		return "\n" + m.help.View(m.keys)
+		controls = m.help.View(m.keys)
+	} else {
+		// Show concise controls based on current state
+		switch m.state {
+		case menuView:
+			selectedItem := m.menu[m.selected]
+			if selectedItem == "Projects" || selectedItem == "Blogs" {
+				controls = "↑/↓ navigate • enter activate • ? help • q quit"
+			} else if selectedItem == "Exit" {
+				controls = "↑/↓ navigate • enter exit • ? help • q quit"
+			} else {
+				controls = "↑/↓ navigate • enter view • ? help • q quit"
+			}
+		case contentView:
+			selectedItem := m.menu[m.selected]
+			if selectedItem == "Projects" || selectedItem == "Blogs" {
+				controls = "↑/↓ navigate • / filter • enter open • esc back • ? help • q quit"
+			} else {
+				controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit"
+			}
+		case blogDetailView:
+			scrollPct := fmt.Sprintf("%3.0f%%", m.blogDetailViewport.ScrollPercent()*100)
+			controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
+		case projectDetailView:
+			scrollPct := fmt.Sprintf("%3.0f%%", m.projectDetailViewport.ScrollPercent()*100)
+			controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
+		}
 	}
 
-	// Show scroll percentage in detail views
-	if m.state == blogDetailView {
-		scrollInfo := styles.BlogScrollInfo.Render(fmt.Sprintf(" %3.f%% ", m.blogDetailViewport.ScrollPercent()*100))
-		line := strings.Repeat("─", max(0, m.blogDetailViewport.Width-lipgloss.Width(scrollInfo)))
-		return "\n" + lipgloss.JoinHorizontal(lipgloss.Center, line, scrollInfo)
-	}
-
-	if m.state == projectDetailView {
-		scrollInfo := styles.BlogScrollInfo.Render(fmt.Sprintf(" %3.f%% ", m.projectDetailViewport.ScrollPercent()*100))
-		line := strings.Repeat("─", max(0, m.projectDetailViewport.Width-lipgloss.Width(scrollInfo)))
-		return "\n" + lipgloss.JoinHorizontal(lipgloss.Center, line, scrollInfo)
-	}
-
-	return "\n" + styles.Footer.Render(m.help.View(m.keys))
+	return "\n" + styles.Footer.Render(controls)
 }
 
 // renderMenu renders the main menu
@@ -132,9 +162,15 @@ func (m Model) renderNeoSidebarLogo() string {
 		owner = "user"
 	}
 
-	meta := styles.SidebarMeta.Render(owner + "@portfolio")
-	line := styles.NeoSeparator.Render(strings.Repeat("-", 20))
-	return lipgloss.JoinVertical(lipgloss.Left, logoStyle.Render(logo), meta, line)
+	// Truncate if too long
+	userHost := owner + "@portfolio"
+	if len(userHost) > 24 {
+		userHost = userHost[:21] + "..."
+	}
+
+	meta := styles.SidebarMeta.Render(userHost)
+	line := styles.NeoSeparator.Render(strings.Repeat("─", min(len(userHost), 20)))
+	return lipgloss.JoinVertical(lipgloss.Center, logoStyle.Render(logo), meta, line)
 }
 
 func renderNeoColorSwatches() string {
@@ -146,7 +182,7 @@ func renderNeoColorSwatches() string {
 	return strings.Join(chips, "")
 }
 
-func (m Model) renderNeoHome() string {
+func (m Model) renderNeoHome(availableWidth int) string {
 	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
 	logo := strings.Join([]string{
 		"        /\\",
@@ -162,33 +198,76 @@ func (m Model) renderNeoHome() string {
 	}
 
 	title := owner + "@portfolio-tui"
+	if len(title) > 40 {
+		title = title[:37] + "..."
+	}
+
 	projects := fmt.Sprintf("%d", len(m.projects))
 	posts := fmt.Sprintf("%d", len(m.posts))
 
-	info := strings.Join([]string{
+	// Get host from environment
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	// Truncate session terminal name if too long
+	termName := m.sessionTerminal
+	if len(termName) > 30 {
+		termName = termName[:27] + "..."
+	}
+
+	// Role/tagline
+	tagline := "Developer • DevOps • Homelab Builder"
+
+	infoLines := []string{
 		styles.NeoTitle.Render(title),
-		styles.NeoSeparator.Render(strings.Repeat("-", len(title))),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("OS"), "Portfolio Linux"),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Host"), "BubbleTea Terminal"),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("TERM"), m.sessionTerminal),
+		styles.NeoSeparator.Render(strings.Repeat("─", min(len(title), 40))),
+		styles.NeoLabel.Render(tagline),
+		"",
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("App"), "portfolio-tui"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Version"), "v1.0"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Runtime"), "Bubble Tea"),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Host"), host),
+		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("TERM"), termName),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Session"), m.sessionID),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Projects"), projects),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Posts"), posts),
 		"",
 		renderNeoColorSwatches(),
-	}, "\n")
+	}
+	info := strings.Join(infoLines, "\n")
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, logoStyle.Render(logo), "  ", info)
+	// 40% logo, 60% info
+	logoWidth := availableWidth * 40 / 100
+	infoWidth := availableWidth - logoWidth
+	if infoWidth < 20 {
+		infoWidth = 20
+	}
+
+	renderedLogo := lipgloss.NewStyle().
+		Width(logoWidth).
+		AlignHorizontal(lipgloss.Center).
+		Render(logoStyle.Render(logo))
+
+	renderedInfo := lipgloss.NewStyle().
+		Width(infoWidth).
+		Render(info)
+
+	return lipgloss.JoinHorizontal(lipgloss.Center, renderedLogo, renderedInfo)
 }
 
 func (m Model) renderSidebar(height int) string {
-	title := styles.SidebarTitle.Render("NEOFETCH")
+	title := styles.SidebarTitle.Render("PORTFOLIO")
 	logo := m.renderNeoSidebarLogo()
 	body := m.renderMenu()
 
+	// Constrain height to prevent overflow
+	constrainedHeight := max(minHeight, min(height, 60))
+
 	box := lipgloss.NewStyle().
-		Width(28).
-		Height(height).
+		Width(sidebarWidth).
+		Height(constrainedHeight).
 		Padding(0, 1).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62"))
@@ -196,30 +275,65 @@ func (m Model) renderSidebar(height int) string {
 	return box.Render(lipgloss.JoinVertical(lipgloss.Left, title, "", logo, "", body))
 }
 
-func (m Model) renderContentPane(height int) string {
+func (m Model) renderContentPane(width, height int) string {
 	selectedItem := m.menu[m.selected]
+
+	// Constrain height to prevent overflow
+	constrainedHeight := max(minHeight, min(height, 60))
+
+	// Calculate inner dimensions (accounting for padding and borders)
+	innerWidth := width - 4
+	innerHeight := constrainedHeight - 2
 
 	var content string
 	if selectedItem == "Home" {
-		content = m.renderNeoHome()
-	} else if m.state == menuView {
-		content = m.content[selectedItem]
-		if strings.TrimSpace(content) == "" {
-			content = "Select an item from the sidebar and press Enter."
-		}
-	} else {
-		if selectedItem == "Projects" {
-			content = m.projectsList.View()
-		} else if selectedItem == "Blogs" {
-			content = m.blogList.View()
+		// Make Home content scrollable in case terminal is too small
+		homeContent := m.renderNeoHome(innerWidth)
+		m.viewport.Width = innerWidth
+		m.viewport.Height = innerHeight
+		m.viewport.SetContent(homeContent)
+		content = m.viewport.View()
+	} else if selectedItem == "Projects" {
+		// Show list for Projects
+		listContent := m.projectsList.View()
+		// In menuView, gray out the list to show it's not interactive
+		if m.state == menuView {
+			content = dimContent(listContent)
 		} else {
-			content = m.viewport.View()
+			content = listContent
 		}
+	} else if selectedItem == "Blogs" {
+		// Show list for Blogs
+		listContent := m.blogList.View()
+		// In menuView, gray out the list to show it's not interactive
+		if m.state == menuView {
+			content = dimContent(listContent)
+		} else {
+			content = listContent
+		}
+	} else if m.state == menuView {
+		// For other text content in menuView, use viewport for scrolling
+		textContent := m.content[selectedItem]
+		if strings.TrimSpace(textContent) == "" {
+			textContent = "Select an item from the sidebar and press Enter."
+		}
+		// Wrap long lines in content
+		wrappedContent := wrapText(textContent, innerWidth)
+
+		// Update viewport with wrapped content
+		m.viewport.Width = innerWidth
+		m.viewport.Height = innerHeight
+		m.viewport.SetContent(wrappedContent)
+
+		content = m.viewport.View()
+	} else {
+		// contentView for non-list items
+		content = m.viewport.View()
 	}
 
 	box := lipgloss.NewStyle().
-		Width(max(40, m.help.Width-32)).
-		Height(height).
+		Width(width).
+		Height(constrainedHeight).
 		Padding(0, 1).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62"))
@@ -227,11 +341,111 @@ func (m Model) renderContentPane(height int) string {
 	return box.Render(content)
 }
 
+// dimContent applies a gray/dimmed style to content to show it's not interactive
+func dimContent(content string) string {
+	lines := strings.Split(content, "\n")
+	dimmedLines := make([]string, len(lines))
+
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+
+	for i, line := range lines {
+		// Strip existing styles and apply dim color
+		dimmedLines[i] = dimStyle.Render(stripANSI(line))
+	}
+
+	return strings.Join(dimmedLines, "\n")
+}
+
+// stripANSI removes ANSI escape codes from a string
+func stripANSI(str string) string {
+	// Simple ANSI stripper - matches ESC sequences
+	var result strings.Builder
+	inEscape := false
+
+	for i := 0; i < len(str); i++ {
+		if str[i] == '\x1b' && i+1 < len(str) && str[i+1] == '[' {
+			inEscape = true
+			i++ // skip the '['
+			continue
+		}
+
+		if inEscape {
+			if (str[i] >= 'A' && str[i] <= 'Z') || (str[i] >= 'a' && str[i] <= 'z') {
+				inEscape = false
+			}
+			continue
+		}
+
+		result.WriteByte(str[i])
+	}
+
+	return result.String()
+}
+
 func (m Model) renderShellLayout() string {
-	height := max(10, m.viewport.Height)
+	// Calculate available dimensions
+	termWidth := m.help.Width
+	termHeight := m.viewport.Height
+
+	// Ensure minimum terminal size
+	if termWidth < minTerminalWidth {
+		return "\n  Terminal too narrow. Please resize to at least " + fmt.Sprintf("%d", minTerminalWidth) + " columns."
+	}
+
+	// Calculate content width: total - sidebar - borders - spacing
+	contentWidth := termWidth - sidebarWidth - 6
+	if contentWidth < minContentWidth {
+		contentWidth = minContentWidth
+	} else if contentWidth > maxContentWidth {
+		contentWidth = maxContentWidth
+	}
+
+	height := max(minHeight, min(termHeight, 60))
+
 	sidebar := m.renderSidebar(height)
-	content := m.renderContentPane(height)
+	content := m.renderContentPane(contentWidth, height)
 	return lipgloss.JoinHorizontal(lipgloss.Top, sidebar, " ", content)
+}
+
+// wrapText wraps text to a specified width, preserving existing line breaks
+func wrapText(text string, width int) string {
+	if width < 10 {
+		width = 10
+	}
+
+	lines := strings.Split(text, "\n")
+	var wrapped []string
+
+	for _, line := range lines {
+		if len(line) <= width {
+			wrapped = append(wrapped, line)
+			continue
+		}
+
+		// Simple word wrapping
+		words := strings.Fields(line)
+		if len(words) == 0 {
+			wrapped = append(wrapped, line)
+			continue
+		}
+
+		currentLine := ""
+		for _, word := range words {
+			if currentLine == "" {
+				currentLine = word
+			} else if len(currentLine)+1+len(word) <= width {
+				currentLine += " " + word
+			} else {
+				wrapped = append(wrapped, currentLine)
+				currentLine = word
+			}
+		}
+		if currentLine != "" {
+			wrapped = append(wrapped, currentLine)
+		}
+	}
+
+	return strings.Join(wrapped, "\n")
 }
 
 // View renders the entire view

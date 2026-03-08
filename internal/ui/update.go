@@ -66,7 +66,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		headerHeight := lipgloss.Height(m.headerView())
 		footerHeight := lipgloss.Height(m.footerView())
 		verticalMarginHeight := headerHeight + footerHeight
-		contentWidth := max(40, msg.Width-32)
+
+		// Calculate content width with constraints
+		contentWidth := msg.Width - 36 // sidebar(30) + borders(4) + spacing(2)
+		if contentWidth < 50 {
+			contentWidth = 50
+		} else if contentWidth > 120 {
+			contentWidth = 120
+		}
+
+		// Constrain list width to content pane
+		listWidth := contentWidth - 4 // account for padding
 
 		if !m.ready {
 			m.viewport = viewport.New(contentWidth, msg.Height-verticalMarginHeight)
@@ -93,9 +103,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.projectDetailViewport.Height = msg.Height - verticalMarginHeight
 		}
 
-		m.projectsList.SetWidth(contentWidth)
+		m.projectsList.SetWidth(listWidth)
 		m.projectsList.SetHeight(msg.Height - verticalMarginHeight)
-		m.blogList.SetWidth(contentWidth)
+		m.blogList.SetWidth(listWidth)
 		m.blogList.SetHeight(msg.Height - verticalMarginHeight)
 		m.help.Width = msg.Width
 
@@ -106,9 +116,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if m.state == projectDetailView {
 			m.projectDetailViewport, cmd = m.projectDetailViewport.Update(msg)
 			cmds = append(cmds, cmd)
-		} else if m.state == contentView {
+		} else if m.state == menuView {
+			// In menuView, allow viewport scrolling for Home and other text content
 			selectedItem := m.menu[m.selected]
 			if selectedItem != "Projects" && selectedItem != "Blogs" {
+				m.viewport, cmd = m.viewport.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+		} else if m.state == contentView {
+			// In contentView, allow full interaction with lists and viewports
+			selectedItem := m.menu[m.selected]
+			if selectedItem == "Projects" {
+				m.projectsList, cmd = m.projectsList.Update(msg)
+				cmds = append(cmds, cmd)
+			} else if selectedItem == "Blogs" {
+				m.blogList, cmd = m.blogList.Update(msg)
+				cmds = append(cmds, cmd)
+			} else {
 				m.viewport, cmd = m.viewport.Update(msg)
 				cmds = append(cmds, cmd)
 			}
@@ -131,16 +155,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// In menuView, only handle sidebar navigation - lists are visual only
 	switch {
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 	case key.Matches(msg, m.keys.Up):
 		if m.selected > 0 {
 			m.selected--
+			// Reset viewport when changing selection
+			m.viewport.GotoTop()
 		}
 	case key.Matches(msg, m.keys.Down):
 		if m.selected < len(m.menu)-1 {
 			m.selected++
+			// Reset viewport when changing selection
+			m.viewport.GotoTop()
 		}
 	case key.Matches(msg, m.keys.Help):
 		m.help.ShowAll = !m.help.ShowAll
@@ -149,9 +178,12 @@ func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if selectedItem == "Exit" {
 			return m, tea.Quit
 		}
+		// Transition to contentView for interaction
 		m.state = contentView
-		m.viewport.SetContent(m.content[selectedItem])
-		m.viewport.GotoTop()
+		if selectedItem != "Projects" && selectedItem != "Blogs" {
+			m.viewport.SetContent(m.content[selectedItem])
+			m.viewport.GotoTop()
+		}
 	}
 
 	return m, nil

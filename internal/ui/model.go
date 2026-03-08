@@ -80,6 +80,7 @@ func InitialModel() Model {
 	projectsList := list.New([]list.Item{}, projectDelegate, 0, 0)
 	projectsList.Title = "🚀 Projects"
 	projectsList.SetShowStatusBar(false)
+	projectsList.SetShowHelp(false)
 	projectsList.SetFilteringEnabled(true)
 	projectsList.Styles.Title = styles.Title
 
@@ -87,6 +88,7 @@ func InitialModel() Model {
 	blogList := list.New([]list.Item{}, blogDelegate, 0, 0)
 	blogList.Title = "📝 Blog Posts"
 	blogList.SetShowStatusBar(false)
+	blogList.SetShowHelp(false)
 	blogList.SetFilteringEnabled(true)
 	blogList.Styles.Title = styles.Title
 
