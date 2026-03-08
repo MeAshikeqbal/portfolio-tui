@@ -57,7 +57,7 @@ func (m Model) headerView() string {
 }
 
 // footerView renders the footer with consistent controls
-func (m Model) footerView() string {
+func (m Model) footerView(width int) string {
 	var controls string
 
 	// Build context-specific help text
@@ -91,7 +91,12 @@ func (m Model) footerView() string {
 		}
 	}
 
-	return "\n" + styles.Footer.Render(controls)
+	footerStyle := styles.Footer
+	if width > 0 {
+		footerStyle = footerStyle.Width(width).AlignHorizontal(lipgloss.Center)
+	}
+
+	return "\n" + footerStyle.Render(controls)
 }
 
 // renderMenu renders the main menu
@@ -508,7 +513,7 @@ func (m Model) View() string {
 	}
 
 	header := m.headerView()
-	footer := m.footerView()
+	footer := m.footerView(m.help.Width)
 
 	var content string
 	if m.state == blogDetailView {

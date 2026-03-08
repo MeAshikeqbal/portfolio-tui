@@ -64,7 +64,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		headerHeight := lipgloss.Height(m.headerView())
-		footerHeight := lipgloss.Height(m.footerView())
+		footerHeight := lipgloss.Height(m.footerView(msg.Width))
 		verticalMarginHeight := headerHeight + footerHeight
 
 		// Calculate content width with constraints
