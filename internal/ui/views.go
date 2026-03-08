@@ -10,12 +10,62 @@ import (
 )
 
 const (
-	sidebarWidth     = 30
+	sidebarRatioPct  = 25
+	minSidebarWidth  = 30
 	minContentWidth  = 50
-	maxContentWidth  = 120
-	minTerminalWidth = sidebarWidth + minContentWidth + 6
-	minHeight        = 20
+	minTerminalWidth = minSidebarWidth + minContentWidth + 6
+	minContentHeight = 25
 )
+
+func styledWarningBox(message string, width int) string {
+	boxWidth := min(width-4, 60)
+	if boxWidth < 30 {
+		boxWidth = 30
+	}
+
+	warningStyle := lipgloss.NewStyle().
+		Width(boxWidth).
+		Padding(1, 2).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("202")).
+		Foreground(lipgloss.Color("202")).
+		Bold(true).
+		AlignHorizontal(lipgloss.Center)
+
+	containerStyle := lipgloss.NewStyle().
+		Width(width).
+		AlignHorizontal(lipgloss.Center).
+		AlignVertical(lipgloss.Center)
+
+	return containerStyle.Render(warningStyle.Render(message))
+}
+
+func smallTerminalHeightWarning(width int) string {
+	message := fmt.Sprintf("⚠ Terminal Too Short\n\nPlease resize to at least %d lines", minContentHeight)
+	return styledWarningBox(message, width)
+}
+
+func smallTerminalWidthWarning(width int) string {
+	message := fmt.Sprintf("⚠ Terminal Too Narrow\n\nPlease resize to at least %d columns", minTerminalWidth)
+	return styledWarningBox(message, width)
+}
+
+// shellWidths calculates a 25/75 sidebar/content split for the usable width.
+func shellWidths(termWidth int) (int, int) {
+	usableWidth := termWidth - 6 // borders + spacing in shell layout
+	sidebar := usableWidth * sidebarRatioPct / 100
+	if sidebar < minSidebarWidth {
+		sidebar = minSidebarWidth
+	}
+
+	content := usableWidth - sidebar
+	if content < minContentWidth {
+		content = minContentWidth
+		sidebar = usableWidth - content
+	}
+
+	return sidebar, content
+}
 
 // headerView renders the header based on current state
 func (m Model) headerView() string {
@@ -152,7 +202,7 @@ func menuIcon(item string) string {
 	}
 }
 
-func (m Model) renderNeoSidebarLogo() string {
+func (m Model) renderNeoSidebarLogo(width int) string {
 	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
 	logo := strings.Join([]string{
 		"      /\\",
@@ -175,7 +225,22 @@ func (m Model) renderNeoSidebarLogo() string {
 
 	meta := styles.SidebarMeta.Render(userHost)
 	line := styles.NeoSeparator.Render(strings.Repeat("─", min(len(userHost), 20)))
-	return lipgloss.JoinVertical(lipgloss.Center, logoStyle.Render(logo), meta, line)
+
+	innerWidth := max(1, width-2)
+	logoBlock := lipgloss.NewStyle().
+		Width(innerWidth).
+		AlignHorizontal(lipgloss.Center).
+		Render(logoStyle.Render(logo))
+	metaBlock := lipgloss.NewStyle().
+		Width(innerWidth).
+		AlignHorizontal(lipgloss.Center).
+		Render(meta)
+	lineBlock := lipgloss.NewStyle().
+		Width(innerWidth).
+		AlignHorizontal(lipgloss.Center).
+		Render(line)
+
+	return lipgloss.JoinVertical(lipgloss.Left, logoBlock, metaBlock, lineBlock)
 }
 
 func renderNeoColorSwatches() string {
@@ -262,16 +327,16 @@ func (m Model) renderNeoHome(availableWidth int) string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, renderedLogo, renderedInfo)
 }
 
-func (m Model) renderSidebar(height int) string {
+func (m Model) renderSidebar(width, height int) string {
 	title := styles.SidebarTitle.Render("PORTFOLIO")
-	logo := m.renderNeoSidebarLogo()
+	logo := m.renderNeoSidebarLogo(width)
 	body := m.renderMenu()
 
-	// Constrain height to prevent overflow
-	constrainedHeight := max(minHeight, min(height, 60))
+	// Use available height to avoid clipping in smaller terminals.
+	constrainedHeight := max(1, height)
 
 	box := lipgloss.NewStyle().
-		Width(sidebarWidth).
+		Width(width).
 		Height(constrainedHeight).
 		Padding(0, 1).
 		Border(lipgloss.RoundedBorder()).
@@ -283,8 +348,8 @@ func (m Model) renderSidebar(height int) string {
 func (m Model) renderContentPane(width, height int) string {
 	selectedItem := m.menu[m.selected]
 
-	// Constrain height to prevent overflow
-	constrainedHeight := max(minHeight, min(height, 60))
+	// Use available height to avoid clipping in smaller terminals.
+	constrainedHeight := max(1, height)
 
 	// Calculate inner dimensions (accounting for padding and borders)
 	innerWidth := width - 4
@@ -394,20 +459,18 @@ func (m Model) renderShellLayout() string {
 
 	// Ensure minimum terminal size
 	if termWidth < minTerminalWidth {
-		return "\n  Terminal too narrow. Please resize to at least " + fmt.Sprintf("%d", minTerminalWidth) + " columns."
+		return smallTerminalWidthWarning(termWidth)
 	}
 
-	// Calculate content width: total - sidebar - borders - spacing
-	contentWidth := termWidth - sidebarWidth - 6
-	if contentWidth < minContentWidth {
-		contentWidth = minContentWidth
-	} else if contentWidth > maxContentWidth {
-		contentWidth = maxContentWidth
+	if termHeight < minContentHeight {
+		return smallTerminalHeightWarning(termWidth)
 	}
 
-	height := max(minHeight, min(termHeight, 60))
+	sidebarWidth, contentWidth := shellWidths(termWidth)
 
-	sidebar := m.renderSidebar(height)
+	height := max(1, termHeight)
+
+	sidebar := m.renderSidebar(sidebarWidth, height)
 	content := m.renderContentPane(contentWidth, height)
 	return lipgloss.JoinHorizontal(lipgloss.Top, sidebar, " ", content)
 }
@@ -510,6 +573,10 @@ func (m Model) View() string {
 
 	if m.loadingState == failed {
 		return fmt.Sprintf("\n  ❌ Error: %s\n\n  Using fallback content...", m.error)
+	}
+
+	if m.viewport.Height > 0 && m.viewport.Height < minContentHeight {
+		return smallTerminalHeightWarning(m.help.Width)
 	}
 
 	header := m.headerView()

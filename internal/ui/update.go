@@ -66,47 +66,43 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		headerHeight := lipgloss.Height(m.headerView())
 		footerHeight := lipgloss.Height(m.footerView(msg.Width))
 		verticalMarginHeight := headerHeight + footerHeight
+		availableHeight := max(1, msg.Height-verticalMarginHeight)
 
-		// Calculate content width with constraints
-		contentWidth := msg.Width - 36 // sidebar(30) + borders(4) + spacing(2)
-		if contentWidth < 50 {
-			contentWidth = 50
-		} else if contentWidth > 120 {
-			contentWidth = 120
-		}
+		// Keep resize logic aligned with shell layout (40% sidebar / 60% content)
+		_, contentWidth := shellWidths(msg.Width)
 
 		// Constrain list width to content pane
-		listWidth := contentWidth - 4 // account for padding
+		listWidth := max(20, contentWidth-4) // account for padding
 
 		if !m.ready {
-			m.viewport = viewport.New(contentWidth, msg.Height-verticalMarginHeight)
+			m.viewport = viewport.New(contentWidth, availableHeight)
 			m.viewport.YPosition = headerHeight
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.MouseWheelDelta = 3
 
-			m.blogDetailViewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.blogDetailViewport = viewport.New(msg.Width, availableHeight)
 			m.blogDetailViewport.YPosition = headerHeight
 			m.blogDetailViewport.MouseWheelEnabled = true
 			m.blogDetailViewport.MouseWheelDelta = 3
 
-			m.projectDetailViewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.projectDetailViewport = viewport.New(msg.Width, availableHeight)
 			m.projectDetailViewport.YPosition = headerHeight
 			m.projectDetailViewport.MouseWheelEnabled = true
 			m.projectDetailViewport.MouseWheelDelta = 3
 			m.ready = true
 		} else {
 			m.viewport.Width = contentWidth
-			m.viewport.Height = msg.Height - verticalMarginHeight
+			m.viewport.Height = availableHeight
 			m.blogDetailViewport.Width = msg.Width
-			m.blogDetailViewport.Height = msg.Height - verticalMarginHeight
+			m.blogDetailViewport.Height = availableHeight
 			m.projectDetailViewport.Width = msg.Width
-			m.projectDetailViewport.Height = msg.Height - verticalMarginHeight
+			m.projectDetailViewport.Height = availableHeight
 		}
 
 		m.projectsList.SetWidth(listWidth)
-		m.projectsList.SetHeight(msg.Height - verticalMarginHeight)
+		m.projectsList.SetHeight(availableHeight)
 		m.blogList.SetWidth(listWidth)
-		m.blogList.SetHeight(msg.Height - verticalMarginHeight)
+		m.blogList.SetHeight(availableHeight)
 		m.help.Width = msg.Width
 
 	case tea.MouseMsg:
