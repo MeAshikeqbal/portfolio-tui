@@ -1,0 +1,220 @@
+package ui
+
+import (
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
+	switch msg := msg.(type) {
+	case ContentMsg:
+		if msg.err != nil {
+			m.loadingState = failed
+			m.error = msg.err.Error()
+		} else {
+			m.content = msg.data
+			m.projects = msg.projects
+			m.posts = msg.posts
+			m.loadingState = loaded
+
+			if len(msg.projects) > 0 {
+				items := make([]list.Item, len(msg.projects))
+				for i, p := range msg.projects {
+					items[i] = ProjectItem{project: p}
+				}
+				m.projectsList.SetItems(items)
+			}
+
+			if len(msg.posts) > 0 {
+				items := make([]list.Item, len(msg.posts))
+				for i, p := range msg.posts {
+					items[i] = PostItem{post: p}
+				}
+				m.blogList.SetItems(items)
+			}
+		}
+
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	case tea.WindowSizeMsg:
+		headerHeight := lipgloss.Height(m.headerView())
+		footerHeight := lipgloss.Height(m.footerView())
+		verticalMarginHeight := headerHeight + footerHeight
+
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.viewport.YPosition = headerHeight
+			m.viewport.MouseWheelEnabled = true
+			m.viewport.MouseWheelDelta = 3
+
+			m.blogDetailViewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.blogDetailViewport.YPosition = headerHeight
+			m.blogDetailViewport.MouseWheelEnabled = true
+			m.blogDetailViewport.MouseWheelDelta = 3
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - verticalMarginHeight
+			m.blogDetailViewport.Width = msg.Width
+			m.blogDetailViewport.Height = msg.Height - verticalMarginHeight
+		}
+
+		m.projectsList.SetWidth(msg.Width)
+		m.projectsList.SetHeight(msg.Height - verticalMarginHeight)
+		m.blogList.SetWidth(msg.Width)
+		m.blogList.SetHeight(msg.Height - verticalMarginHeight)
+		m.help.Width = msg.Width
+
+	case tea.MouseMsg:
+		if m.state == blogDetailView {
+			m.blogDetailViewport, cmd = m.blogDetailViewport.Update(msg)
+			cmds = append(cmds, cmd)
+		} else if m.state == contentView {
+			selectedItem := m.menu[m.selected]
+			if selectedItem != "Projects" && selectedItem != "Blog" {
+				m.viewport, cmd = m.viewport.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+		}
+
+	case tea.KeyMsg:
+		switch m.state {
+		case menuView:
+			return m.updateMenuView(msg)
+		case contentView:
+			return m.updateContentView(msg)
+		case blogDetailView:
+			return m.updateBlogDetailView(msg)
+		}
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
+func (m Model) updateMenuView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Quit):
+		return m, tea.Quit
+	case key.Matches(msg, m.keys.Up):
+		if m.selected > 0 {
+			m.selected--
+		}
+	case key.Matches(msg, m.keys.Down):
+		if m.selected < len(m.menu)-1 {
+			m.selected++
+		}
+	case key.Matches(msg, m.keys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+	case msg.String() == "enter":
+		selectedItem := m.menu[m.selected]
+		if selectedItem == "Exit" {
+			return m, tea.Quit
+		}
+		m.state = contentView
+		m.viewport.SetContent(m.content[selectedItem])
+		m.viewport.GotoTop()
+	}
+
+	return m, nil
+}
+
+func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	selectedItem := m.menu[m.selected]
+
+	if selectedItem == "Projects" {
+		if m.projectsList.FilterState() != list.Filtering {
+			switch {
+			case key.Matches(msg, m.keys.Back):
+				m.state = menuView
+				return m, nil
+			case key.Matches(msg, m.keys.Quit):
+				return m, tea.Quit
+			case key.Matches(msg, m.keys.Help):
+				m.help.ShowAll = !m.help.ShowAll
+				return m, nil
+			}
+		}
+
+		var cmd tea.Cmd
+		m.projectsList, cmd = m.projectsList.Update(msg)
+		return m, cmd
+	}
+
+	if selectedItem == "Blog" {
+		if m.blogList.FilterState() != list.Filtering {
+			switch {
+			case key.Matches(msg, m.keys.Back):
+				m.state = menuView
+				return m, nil
+			case key.Matches(msg, m.keys.Quit):
+				return m, tea.Quit
+			case key.Matches(msg, m.keys.Help):
+				m.help.ShowAll = !m.help.ShowAll
+				return m, nil
+			case msg.String() == "enter":
+				if selected := m.blogList.SelectedItem(); selected != nil {
+					if postItem, ok := selected.(PostItem); ok {
+						m.selectedPost = &postItem.post
+						m.blogDetailViewport.SetContent(renderBlogPostContent(m.selectedPost))
+						m.blogDetailViewport.GotoTop()
+						m.state = blogDetailView
+						return m, nil
+					}
+				}
+			}
+		}
+
+		var cmd tea.Cmd
+		m.blogList, cmd = m.blogList.Update(msg)
+		return m, cmd
+	}
+
+	switch {
+	case key.Matches(msg, m.keys.Back):
+		m.state = menuView
+		return m, nil
+	case key.Matches(msg, m.keys.Quit):
+		return m, tea.Quit
+	case key.Matches(msg, m.keys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+	}
+
+	var cmd tea.Cmd
+	m.viewport, cmd = m.viewport.Update(msg)
+	return m, cmd
+}
+
+func (m Model) updateBlogDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Back):
+		m.state = contentView
+		m.selectedPost = nil
+		return m, nil
+	case key.Matches(msg, m.keys.Quit):
+		return m, tea.Quit
+	case key.Matches(msg, m.keys.Help):
+		m.help.ShowAll = !m.help.ShowAll
+		return m, nil
+	case key.Matches(msg, m.keys.Home):
+		m.blogDetailViewport.GotoTop()
+		return m, nil
+	case key.Matches(msg, m.keys.End):
+		m.blogDetailViewport.GotoBottom()
+		return m, nil
+	}
+
+	var cmd tea.Cmd
+	m.blogDetailViewport, cmd = m.blogDetailViewport.Update(msg)
+	return m, cmd
+}

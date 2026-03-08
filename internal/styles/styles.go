@@ -22,3 +22,25 @@ var ViewportStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("62")).
 	PaddingLeft(2).
 	PaddingRight(2)
+
+var LoadingStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("205")).
+	Bold(true)
+
+var BlogTitleStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("205")).
+	PaddingLeft(1).
+	PaddingRight(1).
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderRight(false)
+
+var BlogScrollInfo = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("240")).
+	PaddingLeft(1).
+	PaddingRight(1).
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderLeft(false)
+
+var LineNumberStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("240"))
