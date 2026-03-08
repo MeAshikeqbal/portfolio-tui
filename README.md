@@ -214,7 +214,20 @@ portfolio-tui/
 │   ├── styles/         # Lip Gloss styles
 │   │   └── styles.go
 │   └── ui/             # Bubble Tea UI components
-│       └── model.go
+│       ├── components/
+│       │   ├── keymap/
+│       │   │   └── keymap.go
+│       │   └── listitem/
+│       │       └── listitem.go
+│       ├── modules/
+│       │   ├── blog/
+│       │   │   └── renderer.go
+│       │   └── content/
+│       │       └── fetcher.go
+│       ├── model.go
+│       ├── update.go
+│       ├── content.go
+│       └── views.go
 ├── main.go             # Entry point
 ├── .env                # Environment variables (gitignored)
 ├── .env.example        # Environment template

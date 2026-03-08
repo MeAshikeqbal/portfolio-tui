@@ -1,4 +1,4 @@
-package ui
+package blog
 
 import (
 	"strings"
@@ -6,32 +6,26 @@ import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 )
 
-// formatDate formats an ISO date string to a more readable format
-func formatDate(isoDate string) string {
-	// Simple formatting - just take the date part (YYYY-MM-DD)
+func FormatDate(isoDate string) string {
 	if len(isoDate) >= 10 {
 		return isoDate[:10]
 	}
 	return isoDate
 }
 
-// renderBlogPostContent converts Sanity block content to readable text
-func renderBlogPostContent(post *sanity.Post) string {
+func RenderPostContent(post *sanity.Post) string {
 	var sb strings.Builder
 
-	// Title
 	sb.WriteString(post.Title)
 	sb.WriteString("\n")
 	sb.WriteString(strings.Repeat("=", len(post.Title)))
 	sb.WriteString("\n\n")
 
-	// Metadata
 	if post.PublishedAt != "" {
 		sb.WriteString("📅 Published: ")
-		sb.WriteString(formatDate(post.PublishedAt))
+		sb.WriteString(FormatDate(post.PublishedAt))
 		sb.WriteString("\n")
 	}
-
 	if post.Author != nil {
 		if author, ok := post.Author.(string); ok && author != "" {
 			sb.WriteString("✍️  Author: ")
@@ -39,7 +33,6 @@ func renderBlogPostContent(post *sanity.Post) string {
 			sb.WriteString("\n")
 		}
 	}
-
 	if len(post.Categories) > 0 {
 		var cats []string
 		for _, cat := range post.Categories {
@@ -58,15 +51,11 @@ func renderBlogPostContent(post *sanity.Post) string {
 	sb.WriteString(strings.Repeat("─", 80))
 	sb.WriteString("\n\n")
 
-	// Body content
 	if len(post.Body) > 0 {
 		for _, block := range post.Body {
 			if blockMap, ok := block.(map[string]interface{}); ok {
-				// Check block type
 				blockType, _ := blockMap["_type"].(string)
-
 				if blockType == "block" {
-					// Text block
 					if children, ok := blockMap["children"].([]interface{}); ok {
 						for _, child := range children {
 							if childMap, ok := child.(map[string]interface{}); ok {

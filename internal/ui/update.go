@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/listitem"
+	blogmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/blog"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -29,7 +32,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(msg.projects) > 0 {
 				items := make([]list.Item, len(msg.projects))
 				for i, p := range msg.projects {
-					items[i] = ProjectItem{project: p}
+					items[i] = listitem.ProjectItem{Data: p}
 				}
 				m.projectsList.SetItems(items)
 			}
@@ -37,7 +40,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(msg.posts) > 0 {
 				items := make([]list.Item, len(msg.posts))
 				for i, p := range msg.posts {
-					items[i] = PostItem{post: p}
+					items[i] = listitem.PostItem{Data: p}
 				}
 				m.blogList.SetItems(items)
 			}
@@ -164,9 +167,9 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case msg.String() == "enter":
 				if selected := m.blogList.SelectedItem(); selected != nil {
-					if postItem, ok := selected.(PostItem); ok {
-						m.selectedPost = &postItem.post
-						m.blogDetailViewport.SetContent(renderBlogPostContent(m.selectedPost))
+					if postItem, ok := selected.(listitem.PostItem); ok {
+						m.selectedPost = &postItem.Data
+						m.blogDetailViewport.SetContent(blogmodule.RenderPostContent(m.selectedPost))
 						m.blogDetailViewport.GotoTop()
 						m.state = blogDetailView
 						return m, nil

@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
+	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/keymap"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
@@ -45,7 +46,7 @@ type Model struct {
 	projectsList       list.Model
 	blogList           list.Model
 	help               help.Model
-	keys               keyMap
+	keys               keymap.Map
 	ready              bool
 	state              viewState
 	content            map[string]string
@@ -90,7 +91,7 @@ func InitialModel() Model {
 		projectsList: projectsList,
 		blogList:     blogList,
 		help:         help.New(),
-		keys:         keys,
+		keys:         keymap.Default(),
 		state:        menuView,
 		content:      make(map[string]string),
 		loadingState: loading,
