@@ -126,6 +126,15 @@ type Category struct {
 	Description string `json:"description"`
 }
 
+// Education represents an education entry from Sanity
+type Education struct {
+	ID     string `json:"_id"`
+	Year   string `json:"year"`
+	Degree string `json:"degree"`
+	School string `json:"school"`
+	Desc   string `json:"desc"`
+}
+
 func NewClient() *Client {
 	// Sanity API endpoint format: https://{projectId}.api.sanity.io/v{apiVersion}/data/query/{dataset}
 	// The apiVersion should be like "2024-12-21" and we add "v" prefix in the URL
@@ -374,4 +383,22 @@ func (c *Client) GetCategories() ([]Category, error) {
 		}
 	}
 	return categories, nil
+}
+
+func (c *Client) GetEducation() ([]Education, error) {
+	query := `*[_type == "education"] | order(year desc)`
+	results, err := c.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var educations []Education
+	for _, r := range results {
+		data, _ := json.Marshal(r)
+		var e Education
+		if err := json.Unmarshal(data, &e); err == nil {
+			educations = append(educations, e)
+		}
+	}
+	return educations, nil
 }

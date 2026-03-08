@@ -152,7 +152,29 @@ func Fetch(client *sanity.Client) Payload {
 	// Sidebar aliases and static sections
 	content["Home"] = defaultHome
 	content["Experience"] = defaultExperience
-	content["Education"] = defaultEducation
+
+	if educations, err := client.GetEducation(); err == nil && len(educations) > 0 {
+		var sb strings.Builder
+		sb.WriteString("🎓 Education\n\n")
+		for _, e := range educations {
+			if e.Year != "" {
+				sb.WriteString(fmt.Sprintf("[%s]\n", e.Year))
+			}
+			if e.Degree != "" {
+				sb.WriteString(fmt.Sprintf("  %s\n", e.Degree))
+			}
+			if e.School != "" {
+				sb.WriteString(fmt.Sprintf("  @ %s\n", e.School))
+			}
+			if e.Desc != "" {
+				sb.WriteString(fmt.Sprintf("  %s\n", e.Desc))
+			}
+			sb.WriteString("\n")
+		}
+		content["Education"] = sb.String()
+	} else {
+		content["Education"] = defaultEducation
+	}
 
 	if about, err := client.GetAbout(); err == nil {
 		var sb strings.Builder
