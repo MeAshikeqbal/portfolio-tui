@@ -26,16 +26,9 @@ func (m Model) headerView() string {
 // Returns "" for Home (no header) and any unhandled state.
 func (m Model) getBreadcrumb() string {
 	switch m.state {
-	case blogDetailView:
-		if m.selectedPost != nil {
-			return "Blogs > " + m.selectedPost.Title
-		}
-		return "Blogs"
-	case projectDetailView:
-		if m.selectedProject != nil {
-			return "Projects > " + m.selectedProject.Title
-		}
-		return "Projects"
+	case blogDetailView, projectDetailView:
+		// Breadcrumb is embedded in the detail box border, not the header
+		return ""
 	case menuView, contentView:
 		selectedItem := m.menu[m.selected]
 		if selectedItem == "Home" {
@@ -189,6 +182,27 @@ func (m Model) renderShellLayout() string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, sidebar, " ", content)
 }
 
+// embedBreadcrumbInBorder replaces the top border line of a lipgloss-rendered
+// box with one that contains the breadcrumb text: ╭─ Blogs > Title ──────╮
+func embedBreadcrumbInBorder(rendered, breadcrumb string, borderStyle, textStyle lipgloss.Style) string {
+	if breadcrumb == "" {
+		return rendered
+	}
+	lines := strings.Split(rendered, "\n")
+	if len(lines) == 0 {
+		return rendered
+	}
+	topWidth := lipgloss.Width(lines[0])
+	label := " " + breadcrumb + " "
+	labelW := lipgloss.Width(label)
+	rest := topWidth - 3 - labelW // "╭─" = 2, "╮" = 1
+	if rest < 0 {
+		rest = 0
+	}
+	lines[0] = borderStyle.Render("╭─") + textStyle.Render(label) + borderStyle.Render(strings.Repeat("─", rest)+"╮")
+	return strings.Join(lines, "\n")
+}
+
 // View renders the entire view
 func (m Model) View() string {
 	if !m.introComplete {
@@ -267,11 +281,24 @@ func (m Model) View() string {
 		BorderForeground(lipgloss.Color("62")).
 		Padding(0, 2)
 
+	borderColor := lipgloss.NewStyle().Foreground(lipgloss.Color("62"))
+	breadcrumbStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	var content string
 	if m.state == blogDetailView {
-		content = detailBox.Render(m.blogDetailViewport.View())
+		var bc string
+		if m.selectedPost != nil {
+			bc = "Blogs > " + m.selectedPost.Title
+		}
+		rendered := detailBox.Render(m.blogDetailViewport.View())
+		content = embedBreadcrumbInBorder(rendered, bc, borderColor, breadcrumbStyle)
 	} else if m.state == projectDetailView {
-		content = detailBox.Render(m.projectDetailViewport.View())
+		var bc string
+		if m.selectedProject != nil {
+			bc = "Projects > " + m.selectedProject.Title
+		}
+		rendered := detailBox.Render(m.projectDetailViewport.View())
+		content = embedBreadcrumbInBorder(rendered, bc, borderColor, breadcrumbStyle)
 	} else {
 		content = m.renderShellLayout()
 	}
