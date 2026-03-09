@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/keymap"
+	blogmodule "github.com/MeAshikeqbal/portfolio-tui/internal/ui/modules/blog"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
@@ -65,5 +66,7 @@ type Model struct {
 	sanityClient          *sanity.Client
 	spinner               spinner.Model
 	showHelpModal         bool
+	showTOC               bool
+	tocEntries            []blogmodule.TOCEntry
 	termHeight            int
 }

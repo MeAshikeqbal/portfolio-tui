@@ -8,6 +8,7 @@ import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/helpmodal"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/menu"
+	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/components/tocmodal"
 	uiconfig "github.com/MeAshikeqbal/portfolio-tui/internal/ui/config"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/layout"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui/neofetch"
@@ -69,7 +70,7 @@ func (m Model) footerView(width int) string {
 		}
 	case blogDetailView:
 		scrollPct := fmt.Sprintf("%3.0f%%", m.blogDetailViewport.ScrollPercent()*100)
-		controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
+		controls = "↑/↓ scroll • t toc • esc back • ? help • q quit • " + scrollPct
 	case projectDetailView:
 		scrollPct := fmt.Sprintf("%3.0f%%", m.projectDetailViewport.ScrollPercent()*100)
 		controls = "↑/↓ scroll • pgup/pgdn page • home/end top/bottom • esc back • ? help • q quit • " + scrollPct
@@ -261,11 +262,16 @@ func (m Model) View() string {
 	}
 	footer := m.footerView(m.help.Width)
 
+	detailBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(0, 2)
+
 	var content string
 	if m.state == blogDetailView {
-		content = m.blogDetailViewport.View()
+		content = detailBox.Render(m.blogDetailViewport.View())
 	} else if m.state == projectDetailView {
-		content = m.projectDetailViewport.View()
+		content = detailBox.Render(m.projectDetailViewport.View())
 	} else {
 		content = m.renderShellLayout()
 	}
@@ -276,6 +282,12 @@ func (m Model) View() string {
 	if m.showHelpModal {
 		helpText := m.getHelpContent()
 		modal := helpmodal.New(m.help.Width, m.termHeight, helpText)
+		return modal.View()
+	}
+
+	// Render TOC modal as a full-screen overlay
+	if m.showTOC && m.state == blogDetailView {
+		modal := tocmodal.New(m.help.Width, m.termHeight, m.tocEntries)
 		return modal.View()
 	}
 
@@ -375,7 +387,29 @@ func (m Model) getHelpContent() string {
 			help.WriteString("\n\n")
 		}
 
-	case blogDetailView, projectDetailView:
+	case blogDetailView:
+		help.WriteString(titleStyle.Render("Scrolling"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  ↑/↓"))
+		help.WriteString("      " + descStyle.Render("Scroll up/down"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  pgup/pgdn"))
+		help.WriteString("  " + descStyle.Render("Page up/down"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  home/end"))
+		help.WriteString("   " + descStyle.Render("Jump to top/bottom"))
+		help.WriteString("\n\n")
+
+		help.WriteString(titleStyle.Render("Navigation"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  t"))
+		help.WriteString("        " + descStyle.Render("Table of contents"))
+		help.WriteString("\n")
+		help.WriteString(keyStyle.Render("  esc"))
+		help.WriteString("    " + descStyle.Render("Back to view"))
+		help.WriteString("\n\n")
+
+	case projectDetailView:
 		help.WriteString(titleStyle.Render("Scrolling"))
 		help.WriteString("\n")
 		help.WriteString(keyStyle.Render("  ↑/↓"))

@@ -81,12 +81,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.MouseWheelDelta = 3
 
-			m.blogDetailViewport = viewport.New(msg.Width, availableHeight)
+			// Reserve space for border (2) horizontally + padding (4) horizontally, border (2) vertically
+			m.blogDetailViewport = viewport.New(msg.Width-6, availableHeight-2)
 			m.blogDetailViewport.YPosition = headerHeight
 			m.blogDetailViewport.MouseWheelEnabled = true
 			m.blogDetailViewport.MouseWheelDelta = 3
 
-			m.projectDetailViewport = viewport.New(msg.Width, availableHeight)
+			m.projectDetailViewport = viewport.New(msg.Width-6, availableHeight-2)
 			m.projectDetailViewport.YPosition = headerHeight
 			m.projectDetailViewport.MouseWheelEnabled = true
 			m.projectDetailViewport.MouseWheelDelta = 3
@@ -94,10 +95,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.viewport.Width = contentWidth
 			m.viewport.Height = availableHeight
-			m.blogDetailViewport.Width = msg.Width
-			m.blogDetailViewport.Height = availableHeight
-			m.projectDetailViewport.Width = msg.Width
-			m.projectDetailViewport.Height = availableHeight
+			m.blogDetailViewport.Width = msg.Width - 6
+			m.blogDetailViewport.Height = availableHeight - 2
+			m.projectDetailViewport.Width = msg.Width - 6
+			m.projectDetailViewport.Height = availableHeight - 2
 		}
 
 		m.projectsList.SetWidth(listWidth)
@@ -282,7 +283,9 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				if selected := m.blogList.SelectedItem(); selected != nil {
 					if postItem, ok := selected.(listitem.PostItem); ok {
 						m.selectedPost = &postItem.Data
-						m.blogDetailViewport.SetContent(blogmodule.RenderPostContent(m.selectedPost))
+						content, tocEntries := blogmodule.RenderPostContent(m.selectedPost, m.blogDetailViewport.Width)
+						m.blogDetailViewport.SetContent(content)
+						m.tocEntries = tocEntries
 						m.blogDetailViewport.GotoTop()
 						m.state = blogDetailView
 						return m, nil
@@ -312,15 +315,39 @@ func (m Model) updateContentView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateBlogDetailView(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	// Handle TOC modal
+	if m.showTOC {
+		switch msg.String() {
+		case "esc", "t", "T":
+			m.showTOC = false
+			return m, nil
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			idx := int(msg.String()[0]-'0') - 1
+			if idx < len(m.tocEntries) {
+				m.blogDetailViewport.SetYOffset(m.tocEntries[idx].Line)
+				m.showTOC = false
+			}
+			return m, nil
+		}
+		// Ignore other keys while TOC is open
+		return m, nil
+	}
+
 	switch {
 	case key.Matches(msg, m.keys.Back):
 		m.state = contentView
 		m.selectedPost = nil
+		m.tocEntries = nil
 		return m, nil
 	case key.Matches(msg, m.keys.Quit):
 		return m, tea.Quit
 	case key.Matches(msg, m.keys.Help):
 		m.showHelpModal = !m.showHelpModal
+		return m, nil
+	case msg.String() == "t" || msg.String() == "T":
+		if len(m.tocEntries) > 0 {
+			m.showTOC = true
+		}
 		return m, nil
 	case key.Matches(msg, m.keys.Home):
 		m.blogDetailViewport.GotoTop()
