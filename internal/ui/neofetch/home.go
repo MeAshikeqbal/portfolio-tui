@@ -84,19 +84,22 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 	// ── Styles ──
 	dimText := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	sectionHeader := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
-	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
 	projectTitle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
 	projectDesc := lipgloss.NewStyle().Foreground(lipgloss.Color("250"))
 	blogTitle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
 	blogDate := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	bioStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252")).
+		Italic(true).
+		PaddingLeft(1).
+		BorderLeft(true).
+		BorderStyle(lipgloss.ThickBorder()).
+		BorderForeground(lipgloss.Color("62"))
 
-	// Use the info section width for uniform layout below neofetch
-	sectionWidth := max(30, infoWidth)
-	rulerWidth := max(10, sectionWidth-2)
+	// Full width for rulers, content indented
+	rulerWidth := max(10, availableWidth)
 	indent := "  "
 
-	// helper to build a centered ruler
 	ruler := func(text string) string {
 		tl := len(text)
 		pl := max(1, (rulerWidth-tl-2)/2)
@@ -104,68 +107,51 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 		return sectionHeader.Render(strings.Repeat("─", pl) + " " + text + " " + strings.Repeat("─", pr))
 	}
 
-	// truncate long text to fit within section width
 	truncate := func(s string, maxW int) string {
 		if lipgloss.Width(s) <= maxW {
 			return s
 		}
-		// rough byte trim
 		for len(s) > 0 && lipgloss.Width(s) > maxW-3 {
 			s = s[:len(s)-1]
 		}
 		return s + "..."
 	}
 
-	// Build content below neofetch in a uniform-width block
+	contentWidth := max(20, availableWidth-2)
+
 	var below strings.Builder
 
-	// ── Welcome ──
+	// ── Bio ──
 	bio := cfg.Owner.Bio
 	if strings.TrimSpace(bio) != "" {
-		below.WriteString(dimText.Render(bio))
+		below.WriteString(bioStyle.Render(bio))
 		below.WriteString("\n")
 	}
-
-	// ── Portfolio Overview ──
-	below.WriteString("\n")
-	below.WriteString(ruler("Portfolio Overview"))
-	below.WriteString("\n")
-	below.WriteString(fmt.Sprintf("%s%s  %s\n", indent, labelStyle.Render("Projects:"), valueStyle.Render(projectsCount)))
-	below.WriteString(fmt.Sprintf("%s%s  %s\n", indent, labelStyle.Render("Blog Posts:"), valueStyle.Render(postsCount)))
-	below.WriteString(fmt.Sprintf("%s%s  %s", indent, labelStyle.Render("Experience:"), valueStyle.Render(roleTagline)))
 
 	// ── Skills ──
 	skillLines := parseSkillNames(skillsContent)
 	if len(skillLines) > 0 {
-		below.WriteString("\n\n")
+		below.WriteString("\n")
 		below.WriteString(ruler("Skills"))
 		below.WriteString("\n")
 		skillText := strings.Join(skillLines, " • ")
-		below.WriteString(indent + dimText.Render(truncate(skillText, sectionWidth-4)))
+		below.WriteString(indent + dimText.Render(truncate(skillText, contentWidth)))
 	}
 
-	// ── Featured Project ──
+	// ── Featured Projects ──
 	if len(projects) > 0 {
 		below.WriteString("\n\n")
-		below.WriteString(ruler("Featured Project"))
-		p := projects[0]
-		below.WriteString("\n")
-		below.WriteString(indent + projectTitle.Render(p.Title))
-		if p.Description != "" {
-			desc := truncate(p.Description, sectionWidth-4)
+		below.WriteString(ruler("Featured Projects"))
+		showProjects := min(3, len(projects))
+		for i := 0; i < showProjects; i++ {
+			p := projects[i]
 			below.WriteString("\n")
-			below.WriteString(indent + projectDesc.Render(desc))
-		}
-		var meta []string
-		if len(p.Technologies) > 0 {
-			meta = append(meta, strings.Join(p.Technologies, ", "))
-		}
-		if p.GitHubData != nil && p.GitHubData.Stars > 0 {
-			meta = append(meta, fmt.Sprintf("★ %d", p.GitHubData.Stars))
-		}
-		if len(meta) > 0 {
-			below.WriteString("\n")
-			below.WriteString(indent + dimText.Render(truncate(strings.Join(meta, " • "), sectionWidth-4)))
+			titleLine := projectTitle.Render(p.Title)
+			if p.Description != "" {
+				desc := truncate(p.Description, contentWidth-lipgloss.Width(titleLine)-3)
+				titleLine += projectDesc.Render(" - " + desc)
+			}
+			below.WriteString(indent + truncate(titleLine, contentWidth))
 		}
 	}
 
@@ -181,10 +167,16 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 			if post.PublishedAt != "" && len(post.PublishedAt) >= 10 {
 				date = post.PublishedAt[:10]
 			}
-			maxTitleW := sectionWidth - 4 - len(date) - 2
+			dateW := lipgloss.Width(date)
+			maxTitleW := contentWidth - dateW - 2
 			title := truncate(post.Title, maxTitleW)
 			if date != "" {
-				below.WriteString(fmt.Sprintf("%s%s  %s", indent, blogTitle.Render(title), blogDate.Render(date)))
+				titleW := lipgloss.Width(blogTitle.Render(title))
+				gap := contentWidth - titleW - dateW
+				if gap < 1 {
+					gap = 1
+				}
+				below.WriteString(indent + blogTitle.Render(title) + strings.Repeat(" ", gap) + blogDate.Render(date))
 			} else {
 				below.WriteString(indent + blogTitle.Render(title))
 			}
@@ -193,18 +185,7 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 
 	below.WriteString("\n")
 
-	// Wrap the bottom block to match the info column width and center below neofetch
-	belowBlock := lipgloss.NewStyle().
-		Width(sectionWidth).
-		Render(below.String())
-
-	// Center the below block to align under the neofetch info area
-	centeredBelow := lipgloss.NewStyle().
-		Width(availableWidth).
-		AlignHorizontal(lipgloss.Center).
-		Render(belowBlock)
-
-	return neofetchBlock + "\n" + centeredBelow
+	return neofetchBlock + "\n" + below.String()
 }
 
 // parseSkillNames extracts skill names from the fetched skills content string.
