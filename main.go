@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
 	"github.com/MeAshikeqbal/portfolio-tui/internal/config"
@@ -33,10 +34,14 @@ func main() {
 }
 
 func runLocal() {
-	logFile, err := os.OpenFile("logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err == nil {
-		log.SetOutput(logFile)
+	logFile, err := configureLogging("logs/app.log")
+	if err != nil {
+		fmt.Println("Warning: Failed to initialize logging:", err)
 	}
+	if logFile != nil {
+		defer logFile.Close()
+	}
+
 	p := tea.NewProgram(
 		ui.InitialModel(),
 		tea.WithAltScreen(),
@@ -86,13 +91,19 @@ func runSSHServer(cfg *config.Config) {
 
 	addr := host + ":" + port
 
-	logFile, err := os.OpenFile("logs/ssh-server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	logFile, err := configureLogging("logs/ssh-server.log")
 	if err != nil {
 		log.Printf("Could not open log file: %v", err)
 	}
-	log.SetOutput(logFile)
+	if logFile != nil {
+		defer logFile.Close()
+	}
 
-	customLogger := log.New(logFile, "", log.LstdFlags)
+	if err := ensureParentDir(keyPath); err != nil {
+		log.Printf("Could not create SSH key directory: %v", err)
+	}
+
+	customLogger := log.New(log.Writer(), "", log.LstdFlags)
 
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),
@@ -122,4 +133,27 @@ func runSSHServer(cfg *config.Config) {
 	if err := s.Close(); err != nil {
 		log.Fatalln("Could not close SSH server:", err)
 	}
+}
+
+func configureLogging(path string) (*os.File, error) {
+	if err := ensureParentDir(path); err != nil {
+		return nil, err
+	}
+
+	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	log.SetOutput(logFile)
+	return logFile, nil
+}
+
+func ensureParentDir(path string) error {
+	dir := filepath.Dir(path)
+	if dir == "." || dir == "" {
+		return nil
+	}
+
+	return os.MkdirAll(dir, 0755)
 }

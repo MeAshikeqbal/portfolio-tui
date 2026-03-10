@@ -49,6 +49,45 @@ go build -o portfolio-tui
 ./portfolio-tui
 ```
 
+## Docker
+
+The container image is set up for SSH server mode by default.
+
+```bash
+# Build the image
+docker build -t portfolio-tui .
+
+# Run the SSH server on port 23234
+docker run --rm -p 23234:23234 \
+  -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
+  -e SANITY_PROJECT_ID=your_project_id \
+  -e SANITY_DATASET=production \
+  -e SANITY_API_VERSION=2024-12-21 \
+  portfolio-tui
+```
+
+Connect to it with:
+
+```bash
+ssh -p 23234 localhost
+```
+
+Useful container variants:
+
+```bash
+# Persist generated SSH host keys and logs
+docker run --rm -p 23234:23234 \
+  -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
+  -v "$(pwd)/.ssh:/app/.ssh" \
+  -v "$(pwd)/logs:/app/logs" \
+  portfolio-tui
+
+# Run the local TUI inside an interactive container instead of SSH mode
+docker run --rm -it \
+  -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
+  portfolio-tui local
+```
+
 ## Environment Variables
 
 Create a `.env` file with your Sanity project details:

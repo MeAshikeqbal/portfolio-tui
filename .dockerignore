@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.vscode
+.idea
+tmp
+bin
+dist
+logs
+.ssh
+portfolio-tui
+config.yaml
+config.yml
+.portfolio-tui.yaml
+.portfolio-tui.yml
