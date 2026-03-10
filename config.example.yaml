@@ -36,3 +36,9 @@ branding:
   
   # Compact logo for sidebar (5 lines recommended, each line should be quoted)
   sidebar_logo: "      /\\\n     /  \\\n    / /\\ \\\n   / ____ \\\n  /_/    \\_\\"
+
+# SSH server settings (used with `portfolio-tui serve`)
+ssh:
+  host: "0.0.0.0"
+  port: "23234"
+  host_key_path: ".ssh/term_key"

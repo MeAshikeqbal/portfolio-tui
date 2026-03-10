@@ -17,7 +17,22 @@ import (
 )
 
 // InitialModel creates and initializes the UI model
+// SessionInfo holds session metadata, optionally provided by the SSH server.
+type SessionInfo struct {
+	UserIP   string
+	Terminal string
+}
+
 func InitialModel() Model {
+	return initialModel(nil)
+}
+
+// InitialModelWithSession creates a model pre-populated with SSH session info.
+func InitialModelWithSession(info SessionInfo) Model {
+	return initialModel(&info)
+}
+
+func initialModel(session *SessionInfo) Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
@@ -64,8 +79,8 @@ func InitialModel() Model {
 		state:           menuView,
 		content:         make(map[string]string),
 		portfolioOwner:  resolvePortfolioOwner(),
-		sessionUserIP:   resolveMaskedUserIP(),
-		sessionTerminal: resolveTerminalName(),
+		sessionUserIP:   resolveSessionField(session, "ip"),
+		sessionTerminal: resolveSessionField(session, "terminal"),
 		sessionID:       generateSessionID(),
 		loadingState:    loading,
 		sanityClient:    sanity.NewClient(),

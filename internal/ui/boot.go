@@ -54,24 +54,37 @@ func resolveTerminalName() string {
 	return term
 }
 
-func resolveMaskedUserIP() string {
+func resolveUserIP() string {
 	sshConn := os.Getenv("SSH_CONNECTION")
 	if strings.TrimSpace(sshConn) == "" {
-		return "127.0.xx.xx"
+		return "127.0.0.1"
 	}
 
 	parts := strings.Fields(sshConn)
 	if len(parts) == 0 {
-		return "127.0.xx.xx"
+		return "127.0.0.1"
 	}
 
-	ip := strings.TrimSpace(parts[0])
-	octets := strings.Split(ip, ".")
-	if len(octets) == 4 {
-		return octets[0] + "." + octets[1] + ".xx.xx"
-	}
+	return strings.TrimSpace(parts[0])
+}
 
-	return "private-network"
+// resolveSessionField returns the appropriate session field, preferring
+// SSH-provided values over local env fallbacks.
+func resolveSessionField(session *SessionInfo, field string) string {
+	switch field {
+	case "ip":
+		if session != nil && strings.TrimSpace(session.UserIP) != "" {
+			return session.UserIP
+		}
+		return resolveUserIP()
+	case "terminal":
+		if session != nil && strings.TrimSpace(session.Terminal) != "" {
+			return session.Terminal
+		}
+		return resolveTerminalName()
+	default:
+		return ""
+	}
 }
 
 func generateSessionID() string {

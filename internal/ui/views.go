@@ -206,6 +206,15 @@ func embedBreadcrumbInBorder(rendered, breadcrumb string, borderStyle, textStyle
 // View renders the entire view
 func (m Model) View() string {
 	if !m.introComplete {
+		cfg := appconfig.Get()
+
+		logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Bold(true)
+		titleStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true)
+		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("111")).Bold(true)
+		valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+		dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+		sepStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+
 		logo := "  _ _                 _     _ _         _\n" +
 			" (_) |               | |   (_) |       | |\n" +
 			"  _| |_ ___  __ _ ___| |__  _| | __  __| | _____   __\n" +
@@ -215,39 +224,56 @@ func (m Model) View() string {
 
 		var sb strings.Builder
 		sb.WriteString("\n")
-		sb.WriteString(logo)
+		sb.WriteString(logoStyle.Render(logo))
 
 		if m.introStage >= 1 {
 			sb.WriteString("\n\n")
-			sb.WriteString("Welcome to ")
-			sb.WriteString(m.portfolioOwner)
-			sb.WriteString("'s Terminal Portfolio\n\n")
-			sb.WriteString("Session Info\n")
-			sb.WriteString("----------------------------\n")
-			sb.WriteString("User IP: ")
-			sb.WriteString(m.sessionUserIP)
+			sb.WriteString(titleStyle.Render("Welcome to " + m.portfolioOwner + "'s Terminal Portfolio"))
+			sb.WriteString("\n\n")
+
+			sb.WriteString(dimStyle.Render("Environment"))
 			sb.WriteString("\n")
-			sb.WriteString("Terminal: ")
-			sb.WriteString(m.sessionTerminal)
+			sb.WriteString(sepStyle.Render("───────────"))
 			sb.WriteString("\n")
-			sb.WriteString("Session ID: ")
-			sb.WriteString(m.sessionID)
+			sb.WriteString(labelStyle.Render("App") + valueStyle.Render(":       "+cfg.App.Name))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("Version") + valueStyle.Render(":   "+cfg.App.Version))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("Runtime") + valueStyle.Render(":   "+cfg.App.Runtime))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("Host") + valueStyle.Render(":      "+utils.GetHost()))
+			sb.WriteString("\n\n")
+
+			sb.WriteString(dimStyle.Render("Session"))
+			sb.WriteString("\n")
+			sb.WriteString(sepStyle.Render("───────────"))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("User IP") + valueStyle.Render(":   "+m.sessionUserIP))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("Terminal") + valueStyle.Render(":  "+m.sessionTerminal))
+			sb.WriteString("\n")
+			sb.WriteString(labelStyle.Render("Session") + valueStyle.Render(":   "+m.sessionID))
 			sb.WriteString("\n")
 		}
 
 		if m.introStage >= 2 {
 			sb.WriteString("\n")
-			sb.WriteString("Loading portfolio...\n")
+			sb.WriteString(dimStyle.Render("Loading portfolio..."))
+			sb.WriteString("\n")
 			sb.WriteString(m.spinner.View())
 
 			if m.loadingState == loading {
-				sb.WriteString(" Fetching content....\n")
+				sb.WriteString(dimStyle.Render(" Fetching content...."))
+				sb.WriteString("\n")
 			} else if m.loadingState == loaded {
-				sb.WriteString(" Content loaded. Launching interface\n")
+				sb.WriteString(valueStyle.Render(" Content loaded. Launching interface"))
+				sb.WriteString("\n")
 			} else if m.loadingState == failed {
-				sb.WriteString(" Failed to fetch some content, using fallback data\n")
+				sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Render(" Failed to fetch some content, using fallback data"))
+				sb.WriteString("\n")
 			} else {
-				sb.WriteString(" Initializing interface\n")
+				sb.WriteString(dimStyle.Render(" Initializing interface"))
+				sb.WriteString("\n")
 			}
 		}
 

@@ -44,3 +44,6 @@ tmp/
 
 # Blogs
 /blog/*
+
+# SSH host keys
+.ssh/

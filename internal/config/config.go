@@ -46,6 +46,12 @@ type Config struct {
 		AsciiLogo    string `yaml:"ascii_logo"`
 		SidebarLogo  string `yaml:"sidebar_logo"`
 	} `yaml:"branding"`
+
+	SSH struct {
+		Host        string `yaml:"host"`
+		Port        string `yaml:"port"`
+		HostKeyPath string `yaml:"host_key_path"`
+	} `yaml:"ssh"`
 }
 
 var defaultConfig = Config{
@@ -118,6 +124,15 @@ var defaultConfig = Config{
 			"   / ____ \\",
 			"  /_/    \\_\\",
 		}, "\n"),
+	},
+	SSH: struct {
+		Host        string `yaml:"host"`
+		Port        string `yaml:"port"`
+		HostKeyPath string `yaml:"host_key_path"`
+	}{
+		Host:        "0.0.0.0",
+		Port:        "23234",
+		HostKeyPath: ".ssh/term_key",
 	},
 }
 
