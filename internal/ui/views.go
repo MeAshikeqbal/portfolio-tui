@@ -104,7 +104,7 @@ func (m Model) renderContentPane(width, height int) string {
 	var content string
 	if selectedItem == "Home" {
 		// Make Home content scrollable in case terminal is too small
-		homeContent := neofetch.RenderHome(innerWidth, m.portfolioOwner, m.projects, m.posts, m.sessionTerminal, m.sessionID)
+		homeContent := neofetch.RenderHome(innerWidth, m.portfolioOwner, m.projects, m.posts, m.content["Skills"], m.sessionTerminal, m.sessionID)
 		m.viewport.Width = innerWidth
 		m.viewport.Height = innerHeight
 		m.viewport.SetContent(homeContent)

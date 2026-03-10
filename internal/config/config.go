@@ -20,6 +20,7 @@ type Config struct {
 		Username string `yaml:"username"`
 		Tagline  string `yaml:"tagline"`
 		Role     string `yaml:"role"`
+		Bio      string `yaml:"bio"`
 	} `yaml:"owner"`
 
 	Network struct {
@@ -62,11 +63,13 @@ var defaultConfig = Config{
 		Username string `yaml:"username"`
 		Tagline  string `yaml:"tagline"`
 		Role     string `yaml:"role"`
+		Bio      string `yaml:"bio"`
 	}{
 		FullName: "Ashik Eqbal",
 		Username: "ashikeqbal",
 		Tagline:  "Portfolio",
 		Role:     "Developer • DevOps • Homelab Builder",
+		Bio:      "I build backend systems, homelab infrastructure,\nand developer tools using Go, TypeScript and Linux.",
 	},
 	Network: struct {
 		Host string `yaml:"host"`

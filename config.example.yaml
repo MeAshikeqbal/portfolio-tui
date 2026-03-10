@@ -11,6 +11,7 @@ owner:
   username: "ashikeqbal"  # Used for user@host display
   tagline: "Portfolio"
   role: "Developer • DevOps • Homelab Builder"  # Displayed on home screen
+  bio: "I build backend systems, homelab infrastructure,\nand developer tools using Go, TypeScript and Linux."
 
 network:
   host: "localhost"

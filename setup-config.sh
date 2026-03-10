@@ -37,8 +37,11 @@ username=${username:-"ashikeqbal"}
 read -p "Enter your tagline [Portfolio]: " tagline
 tagline=${tagline:-"Portfolio"}
 
-read -p "Enter your role/bio [Developer • DevOps • Homelab Builder]: " role
+read -p "Enter your role [Developer • DevOps • Homelab Builder]: " role
 role=${role:-"Developer • DevOps • Homelab Builder"}
+
+read -p "Enter a short bio: " bio
+bio=${bio:-""}
 
 read -p "Enter your host [localhost]: " host
 host=${host:-"localhost"}
@@ -73,6 +76,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s/username: .*/username: \"$username\"/" config.yaml
     sed -i '' "s/tagline: .*/tagline: \"$tagline\"/" config.yaml
     sed -i '' "s/role: .*/role: \"$role\"/" config.yaml
+    sed -i '' "s/bio: .*/bio: \"$bio\"/" config.yaml
     sed -i '' "s/host: .*/host: \"$host\"/" config.yaml
     sed -i '' "s|email: .*|email: \"$email\"|" config.yaml
     sed -i '' "s|phone: .*|phone: \"$phone\"|" config.yaml
@@ -86,6 +90,7 @@ else
     sed -i "s/username: .*/username: \"$username\"/" config.yaml
     sed -i "s/tagline: .*/tagline: \"$tagline\"/" config.yaml
     sed -i "s/role: .*/role: \"$role\"/" config.yaml
+    sed -i "s/bio: .*/bio: \"$bio\"/" config.yaml
     sed -i "s/host: .*/host: \"$host\"/" config.yaml
     sed -i "s|email: .*|email: \"$email\"|" config.yaml
     sed -i "s|phone: .*|phone: \"$phone\"|" config.yaml
@@ -102,6 +107,7 @@ echo "  Name:     $fullname"
 echo "  Username: $username"
 echo "  Tagline:  $tagline"
 echo "  Role:     $role"
+echo "  Bio:      $bio"
 echo "  Host:     $host"
 echo "  Email:    $email"
 echo "  Phone:    $phone"
