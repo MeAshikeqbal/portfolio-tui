@@ -12,7 +12,7 @@ import (
 )
 
 // RenderHome renders the neofetch-style home screen
-func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Project, posts []sanity.Post, skillsContent string, sessionTerminal, sessionID string) string {
+func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Project, posts []sanity.Post, skillsContent string) string {
 	logoStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("81")).Bold(true)
 	cfg := config.Get()
 	logo := cfg.Branding.AsciiLogo
@@ -38,24 +38,24 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 	projectsCount := fmt.Sprintf("%d", len(projects))
 	postsCount := fmt.Sprintf("%d", len(posts))
 
-	termName := sessionTerminal
-	if len(termName) > 30 {
-		termName = termName[:27] + "..."
-	}
-
 	roleTagline := cfg.Owner.Role
+
+	groupLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
+	groupSep := styles.NeoSeparator.Render("───────────")
 
 	infoLines := []string{
 		styles.NeoTitle.Render(title),
 		styles.NeoSeparator.Render(strings.Repeat("─", min(len(title), 40))),
 		styles.NeoLabel.Render(roleTagline),
 		"",
+		groupLabel.Render("Environment"),
+		groupSep,
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("App"), cfg.App.Name),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Version"), cfg.App.Version),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Runtime"), cfg.App.Runtime),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Host"), host),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("TERM"), termName),
-		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Session"), sessionID),
+		"",
+		groupLabel.Render("Portfolio"),
+		groupSep,
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Projects"), projectsCount),
 		fmt.Sprintf("%s: %s", styles.NeoLabel.Render("Posts"), postsCount),
 		"",
@@ -124,6 +124,7 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 	// ── Bio ──
 	bio := cfg.Owner.Bio
 	if strings.TrimSpace(bio) != "" {
+		below.WriteString("\n")
 		below.WriteString(bioStyle.Render(bio))
 		below.WriteString("\n")
 	}
@@ -143,15 +144,24 @@ func RenderHome(availableWidth int, portfolioOwner string, projects []sanity.Pro
 		below.WriteString("\n\n")
 		below.WriteString(ruler("Featured Projects"))
 		showProjects := min(3, len(projects))
+		// Find max title width for alignment
+		maxNameW := 0
+		for i := 0; i < showProjects; i++ {
+			if len(projects[i].Title) > maxNameW {
+				maxNameW = len(projects[i].Title)
+			}
+		}
 		for i := 0; i < showProjects; i++ {
 			p := projects[i]
 			below.WriteString("\n")
-			titleLine := projectTitle.Render(p.Title)
+			paddedName := p.Title + strings.Repeat(" ", maxNameW-len(p.Title))
 			if p.Description != "" {
-				desc := truncate(p.Description, contentWidth-lipgloss.Width(titleLine)-3)
-				titleLine += projectDesc.Render(" - " + desc)
+				descMaxW := contentWidth - maxNameW - 5 // " – " + indent
+				desc := truncate(p.Description, descMaxW)
+				below.WriteString(indent + projectTitle.Render(paddedName) + projectDesc.Render("  – "+desc))
+			} else {
+				below.WriteString(indent + projectTitle.Render(paddedName))
 			}
-			below.WriteString(indent + truncate(titleLine, contentWidth))
 		}
 	}
 
