@@ -20,7 +20,7 @@ func (i ProjectItem) FilterValue() string {
 	searchable += " " + i.Data.GitHub + " " + i.Data.URL
 	return searchable
 }
-func (i ProjectItem) Title() string       { return i.Data.Title }
+func (i ProjectItem) Title() string { return i.Data.Title }
 func (i ProjectItem) Description() string {
 	desc := i.Data.Description
 	if i.Data.PublishedAt != "" {
@@ -58,7 +58,7 @@ func (i PostItem) FilterValue() string {
 	}
 	return searchable
 }
-func (i PostItem) Title() string       { return i.Data.Title }
+func (i PostItem) Title() string { return i.Data.Title }
 func (i PostItem) Description() string {
 	desc := ""
 	if i.Data.PublishedAt != "" {
