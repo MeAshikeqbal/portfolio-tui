@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/MeAshikeqbal/portfolio-tui/internal/sanity"
 	"github.com/MeAshikeqbal/portfolio-tui/internal/styles"
@@ -26,6 +28,7 @@ func InitialModel() Model {
 	projectsList.SetShowStatusBar(false)
 	projectsList.SetShowHelp(false)
 	projectsList.SetFilteringEnabled(true)
+	projectsList.Filter = strictContainsFilter
 	projectsList.Styles.Title = styles.Title
 	projectsList.Styles.TitleBar = lipgloss.NewStyle()
 
@@ -35,6 +38,7 @@ func InitialModel() Model {
 	blogList.SetShowStatusBar(false)
 	blogList.SetShowHelp(false)
 	blogList.SetFilteringEnabled(true)
+	blogList.Filter = strictContainsFilter
 	blogList.Styles.Title = styles.Title
 	blogList.Styles.TitleBar = lipgloss.NewStyle()
 
@@ -78,4 +82,80 @@ func (m Model) Init() tea.Cmd {
 		introStageCmd(2, 750*time.Millisecond),
 		introDelayCmd(),
 	)
+}
+
+// strictContainsFilter performs case-insensitive substring matching for all
+// typed terms and preserves original item ordering.
+func strictContainsFilter(term string, targets []string) []list.Rank {
+	query := strings.TrimSpace(strings.ToLower(term))
+	if query == "" {
+		return nil
+	}
+
+	tokens := strings.Fields(query)
+	if len(tokens) == 0 {
+		return nil
+	}
+
+	ranks := make([]list.Rank, 0, len(targets))
+	for i, target := range targets {
+		lowerTarget := strings.ToLower(target)
+		targetWords := tokenizeWords(lowerTarget)
+		matchPos := -1
+		matchToken := ""
+		matchedAll := true
+
+		for _, token := range tokens {
+			if len(token) <= 2 {
+				if !containsWord(targetWords, token) {
+					matchedAll = false
+					break
+				}
+				continue
+			}
+
+			pos := strings.Index(lowerTarget, token)
+			if pos == -1 {
+				matchedAll = false
+				break
+			}
+			if matchPos == -1 || pos < matchPos {
+				matchPos = pos
+				matchToken = token
+			}
+		}
+
+		if !matchedAll {
+			continue
+		}
+
+		matchedIndexes := make([]int, 0, len(matchToken))
+		if matchPos >= 0 {
+			for j := 0; j < len(matchToken); j++ {
+				matchedIndexes = append(matchedIndexes, matchPos+j)
+			}
+		}
+
+		ranks = append(ranks, list.Rank{
+			Index:          i,
+			MatchedIndexes: matchedIndexes,
+		})
+	}
+
+	return ranks
+}
+
+func tokenizeWords(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+}
+
+func containsWord(words []string, token string) bool {
+	for _, w := range words {
+		if w == token {
+			return true
+		}
+	}
+	return false
 }

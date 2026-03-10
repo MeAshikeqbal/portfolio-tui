@@ -11,7 +11,15 @@ type ProjectItem struct {
 	Data sanity.Project
 }
 
-func (i ProjectItem) FilterValue() string { return i.Data.Title }
+func (i ProjectItem) FilterValue() string {
+	// Return searchable content: title, description, technologies, github
+	searchable := i.Data.Title + " " + i.Data.Description
+	for _, tech := range i.Data.Technologies {
+		searchable += " " + tech
+	}
+	searchable += " " + i.Data.GitHub + " " + i.Data.URL
+	return searchable
+}
 func (i ProjectItem) Title() string       { return i.Data.Title }
 func (i ProjectItem) Description() string {
 	desc := i.Data.Description
@@ -35,7 +43,21 @@ type PostItem struct {
 	Data sanity.Post
 }
 
-func (i PostItem) FilterValue() string { return i.Data.Title }
+func (i PostItem) FilterValue() string {
+	// Return searchable content: title, author, categories
+	searchable := i.Data.Title
+	if i.Data.Author != nil {
+		if author, ok := i.Data.Author.(string); ok {
+			searchable += " " + author
+		}
+	}
+	for _, cat := range i.Data.Categories {
+		if catStr, ok := cat.(string); ok {
+			searchable += " " + catStr
+		}
+	}
+	return searchable
+}
 func (i PostItem) Title() string       { return i.Data.Title }
 func (i PostItem) Description() string {
 	desc := ""

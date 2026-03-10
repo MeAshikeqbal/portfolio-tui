@@ -162,6 +162,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case projectDetailView:
 			return m.updateProjectDetailView(msg)
 		}
+
+	default:
+		// Route internal list messages (FilterMatchesMsg, textinput blinks, etc.)
+		// back to the active list so filtering actually works.
+		if m.state == contentView {
+			selectedItem := m.menu[m.selected]
+			if selectedItem == "Projects" {
+				m.projectsList, cmd = m.projectsList.Update(msg)
+				cmds = append(cmds, cmd)
+			} else if selectedItem == "Blogs" {
+				m.blogList, cmd = m.blogList.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+		}
 	}
 
 	return m, tea.Batch(cmds...)
