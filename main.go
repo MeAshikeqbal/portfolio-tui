@@ -33,6 +33,10 @@ func main() {
 }
 
 func runLocal() {
+	logFile, err := os.OpenFile("logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err == nil {
+		log.SetOutput(logFile)
+	}
 	p := tea.NewProgram(
 		ui.InitialModel(),
 		tea.WithAltScreen(),
@@ -40,6 +44,7 @@ func runLocal() {
 	)
 
 	if _, err := p.Run(); err != nil {
+		log.Println("Error:", err)
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
@@ -76,29 +81,25 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 }
 
 func runSSHServer(cfg *config.Config) {
-	host := "0.0.0.0"
-	port := "23234"
-
-	if cfg != nil && cfg.SSH.Host != "" {
-		host = cfg.SSH.Host
-	}
-	if cfg != nil && cfg.SSH.Port != "" {
-		port = cfg.SSH.Port
-	}
-
-	keyPath := ".ssh/term_key"
-	if cfg != nil && cfg.SSH.HostKeyPath != "" {
-		keyPath = cfg.SSH.HostKeyPath
-	}
+	// Use env/config for SSH settings
+	host, port, keyPath := config.GetSSHConfig(cfg)
 
 	addr := host + ":" + port
+
+	logFile, err := os.OpenFile("logs/ssh-server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		log.Printf("Could not open log file: %v", err)
+	}
+	log.SetOutput(logFile)
+
+	customLogger := log.New(logFile, "", log.LstdFlags)
 
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),
 		wish.WithHostKeyPath(keyPath),
 		wish.WithMiddleware(
 			wishbubbletea.Middleware(teaHandler),
-			logging.Middleware(),
+			logging.MiddlewareWithLogger(customLogger),
 		),
 	)
 	if err != nil {

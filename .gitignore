@@ -47,3 +47,6 @@ tmp/
 
 # SSH host keys
 .ssh/
+
+# Logs
+logs/

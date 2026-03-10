@@ -250,3 +250,22 @@ func applyDefaults(cfg *Config) {
 		cfg.Branding.SidebarLogo = defaultConfig.Branding.SidebarLogo
 	}
 }
+
+// getEnvOrDefault returns the value of an environment variable or a fallback.
+func getEnvOrDefault(env, fallback string) string {
+	v := os.Getenv(env)
+	if v != "" {
+		return v
+	}
+	return fallback
+}
+
+// GetSSHConfig returns SSH config values, preferring environment variables.
+func GetSSHConfig(cfg *Config) (host, port, keyPath string) {
+	if cfg == nil {
+		cfg = &defaultConfig
+	}
+	return getEnvOrDefault("PORTFOLIO_SSH_HOST", cfg.SSH.Host),
+		getEnvOrDefault("PORTFOLIO_SSH_PORT", cfg.SSH.Port),
+		getEnvOrDefault("PORTFOLIO_SSH_KEY", cfg.SSH.HostKeyPath)
+}
