@@ -76,11 +76,12 @@ Note: the default host port is `23234` to keep local `portfolio-tui serve` unpri
 
 ## Docker Compose
 
-Use Compose when you want the config file, SSH host keys, logs, and `.env` managed together. This setup bind-mounts `./.ssh` and `./logs` from the host, so generated keys and log files stay in the repo directory.
+Use Compose when you want the config file, SSH host keys, logs, and `.env` managed together. The default Compose image now comes from GitHub Container Registry and is published by `.github/workflows/docker-image.yml`. This setup bind-mounts `./.ssh` and `./logs` from the host, so generated keys and log files stay in the repo directory.
 
 ```bash
-# Build and start the service in the background
-docker compose up --build -d
+# Pull the latest published image and start the service
+docker compose pull
+docker compose up -d
 
 # Follow logs
 docker compose logs -f
@@ -93,11 +94,14 @@ export UID=$(id -u)
 export GID=$(id -g)
 ```
 
-Compose publishes the port from `PORTFOLIO_SSH_PORT` in `.env` on `PORTFOLIO_BIND_IP` and writes SSH keys/logs back to the host bind mounts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
+Compose pulls `PORTFOLIO_IMAGE` from `.env`, publishes the port from `PORTFOLIO_SSH_PORT` on `PORTFOLIO_BIND_IP`, and writes SSH keys/logs back to the host bind mounts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
 
 Common `.env` adjustments:
 
 ```env
+# Default published image from GitHub Actions / GHCR
+PORTFOLIO_IMAGE=ghcr.io/meashikeqbal/portfolio-tui:latest
+
 # Default unprivileged SSH port
 PORTFOLIO_SSH_PORT=23234
 
@@ -110,6 +114,24 @@ PORTFOLIO_BIND_IP=0.0.0.0
 # Or bind only to one host interface
 PORTFOLIO_BIND_IP=192.168.1.10
 ```
+
+To pin Compose to a specific workflow build, replace `latest` with one of the published tags such as `sha-<commit>`.
+
+## GitHub Actions
+
+Docker images are built in `.github/workflows/docker-image.yml`.
+
+- Pull requests build the image without publishing it.
+- Pushes to `main`, version tags matching `v*`, and manual runs publish tags to `ghcr.io/meashikeqbal/portfolio-tui`.
+- Published tags include `latest` on the default branch, branch/tag refs, and `sha-<commit>`.
+
+Local `act` command:
+
+```bash
+act pull_request -j docker -W .github/workflows/docker-image.yml
+```
+
+The repo includes `.actrc` to pin `ubuntu-latest` to `catthehacker/ubuntu:act-latest`. `act` still needs access to a working Docker daemon on the host.
 
 With the current example:
 
