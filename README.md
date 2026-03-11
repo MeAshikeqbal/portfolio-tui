@@ -37,9 +37,11 @@ cd portfolio-tui
 # Install dependencies
 go mod download
 
-# Set up environment variables
+# Set up config and environment
+cp config.example.yaml config.yaml
 cp .env.example .env
-# Edit .env with your Sanity credentials
+# Edit config.yaml with your profile details
+# Edit .env with your Sanity and SSH settings
 
 # Run the application
 go run .
@@ -51,13 +53,13 @@ go build -o portfolio-tui
 
 ## Docker
 
-The container image is set up for SSH server mode by default. The listening port follows `PORTFOLIO_SSH_PORT` from `.env`.
+The container image starts in SSH server mode by default. The listening address inside the container follows `PORTFOLIO_SSH_HOST`, and the published host binding follows `PORTFOLIO_BIND_IP` and `PORTFOLIO_SSH_PORT` from `.env`.
 
 ```bash
 # Build the image
 docker build -t portfolio-tui .
 
-# Run the SSH server on the port defined in .env
+# Run the SSH server with the defaults from .env
 docker run --rm -p 0.0.0.0:22:22 \
   --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
@@ -93,6 +95,22 @@ export GID=$(id -g)
 
 Compose publishes the port from `PORTFOLIO_SSH_PORT` in `.env` on `PORTFOLIO_BIND_IP` and writes SSH keys/logs back to the host bind mounts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
 
+Common `.env` adjustments:
+
+```env
+# Use the standard SSH port only if the host is not already using port 22
+PORTFOLIO_SSH_PORT=22
+
+# Or move the container SSH server to a different host port
+PORTFOLIO_SSH_PORT=2222
+
+# Bind to every host interface
+PORTFOLIO_BIND_IP=0.0.0.0
+
+# Or bind only to one host interface
+PORTFOLIO_BIND_IP=192.168.1.10
+```
+
 With the current example:
 
 ```bash
@@ -119,16 +137,22 @@ docker run --rm -it \
 
 ## Environment Variables
 
-Create a `.env` file with your Sanity project details:
+Create a `.env` file with your Sanity and SSH settings:
 
 ```env
 # Sanity CMS Configuration
 SANITY_PROJECT_ID=your_project_id
 SANITY_DATASET=production
 SANITY_API_VERSION=2024-12-21
+
+# SSH server configuration
+PORTFOLIO_SSH_HOST=0.0.0.0
+PORTFOLIO_SSH_PORT=22
+PORTFOLIO_SSH_KEY=.ssh/term_key
+PORTFOLIO_BIND_IP=0.0.0.0
 ```
 
-Personal/profile/contact/social information now lives in `config.yaml` (see `config.example.yaml`).
+Personal/profile/contact/social information lives in `config.yaml` (see `config.example.yaml`). `.env` is used for Sanity access and SSH runtime settings.
 
 ## Sanity Schema Setup
 
