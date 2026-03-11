@@ -56,6 +56,8 @@ func runLocal() {
 }
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+	ui.SetRenderer(wishbubbletea.MakeRenderer(s))
+
 	// Extract client IP from the SSH connection
 	clientIP := ""
 	if addr := s.RemoteAddr(); addr != nil {

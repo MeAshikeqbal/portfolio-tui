@@ -51,32 +51,58 @@ go build -o portfolio-tui
 
 ## Docker
 
-The container image is set up for SSH server mode by default.
+The container image is set up for SSH server mode by default. The listening port follows `PORTFOLIO_SSH_PORT` from `.env`.
 
 ```bash
 # Build the image
 docker build -t portfolio-tui .
 
-# Run the SSH server on port 23234
-docker run --rm -p 23234:23234 \
+# Run the SSH server on the port defined in .env
+docker run --rm -p 0.0.0.0:23456:23456 \
+  --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
-  -e SANITY_PROJECT_ID=your_project_id \
-  -e SANITY_DATASET=production \
-  -e SANITY_API_VERSION=2024-12-21 \
   portfolio-tui
 ```
 
 Connect to it with:
 
 ```bash
-ssh -p 23234 localhost
+ssh -p 23456 localhost
+```
+
+## Docker Compose
+
+Use Compose when you want the config file, SSH host keys, logs, and `.env` managed together. This setup bind-mounts `./.ssh` and `./logs` from the host, so generated keys and log files stay in the repo directory.
+
+```bash
+# Build and start the service in the background
+docker compose up --build -d
+
+# Follow logs
+docker compose logs -f
+
+# Stop and remove the container
+docker compose down
+
+# If your host UID/GID is not 1000, export them before running compose
+export UID=$(id -u)
+export GID=$(id -g)
+```
+
+Compose publishes the port from `PORTFOLIO_SSH_PORT` in `.env` on `PORTFOLIO_BIND_IP` and writes SSH keys/logs back to the host bind mounts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
+
+With the current example:
+
+```bash
+ssh -p 23456 localhost
 ```
 
 Useful container variants:
 
 ```bash
 # Persist generated SSH host keys and logs
-docker run --rm -p 23234:23234 \
+docker run --rm -p 23456:23456 \
+  --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   -v "$(pwd)/.ssh:/app/.ssh" \
   -v "$(pwd)/logs:/app/logs" \
@@ -84,6 +110,7 @@ docker run --rm -p 23234:23234 \
 
 # Run the local TUI inside an interactive container instead of SSH mode
 docker run --rm -it \
+  --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   portfolio-tui local
 ```

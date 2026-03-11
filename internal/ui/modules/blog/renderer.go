@@ -10,25 +10,55 @@ import (
 
 // styles used throughout the renderer
 var (
-	titleStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
-	metaLabelStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("81"))
-	metaValueStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	metaStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	tagSepStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Bold(true)
-	dividerStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
-	h1Style         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205"))
-	h2Style         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("81"))
-	h2RulerStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
-	h3Style         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("220"))
-	h4Style         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("248"))
-	bodyStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	quoteBarStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("62"))
-	quoteTextStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
-	codeBlockStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("108"))
-	codeBorderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
-	inlineCodeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("108"))
-	bulletStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Bold(true)
+	titleStyle      lipgloss.Style
+	metaLabelStyle  lipgloss.Style
+	metaValueStyle  lipgloss.Style
+	metaStyle       lipgloss.Style
+	tagSepStyle     lipgloss.Style
+	dividerStyle    lipgloss.Style
+	h1Style         lipgloss.Style
+	h2Style         lipgloss.Style
+	h2RulerStyle    lipgloss.Style
+	h3Style         lipgloss.Style
+	h4Style         lipgloss.Style
+	bodyStyle       lipgloss.Style
+	quoteBarStyle   lipgloss.Style
+	quoteTextStyle  lipgloss.Style
+	codeBlockStyle  lipgloss.Style
+	codeBorderStyle lipgloss.Style
+	inlineCodeStyle lipgloss.Style
+	bulletStyle     lipgloss.Style
 )
+
+func init() {
+	SetRenderer(nil)
+}
+
+func SetRenderer(r *lipgloss.Renderer) {
+	newStyle := lipgloss.NewStyle
+	if r != nil {
+		newStyle = r.NewStyle
+	}
+
+	titleStyle = newStyle().Bold(true).Foreground(lipgloss.Color("205"))
+	metaLabelStyle = newStyle().Bold(true).Foreground(lipgloss.Color("81"))
+	metaValueStyle = newStyle().Foreground(lipgloss.Color("252"))
+	metaStyle = newStyle().Foreground(lipgloss.Color("244"))
+	tagSepStyle = newStyle().Foreground(lipgloss.Color("62")).Bold(true)
+	dividerStyle = newStyle().Foreground(lipgloss.Color("238"))
+	h1Style = newStyle().Bold(true).Foreground(lipgloss.Color("205"))
+	h2Style = newStyle().Bold(true).Foreground(lipgloss.Color("81"))
+	h2RulerStyle = newStyle().Foreground(lipgloss.Color("238"))
+	h3Style = newStyle().Bold(true).Foreground(lipgloss.Color("220"))
+	h4Style = newStyle().Bold(true).Foreground(lipgloss.Color("248"))
+	bodyStyle = newStyle().Foreground(lipgloss.Color("252"))
+	quoteBarStyle = newStyle().Foreground(lipgloss.Color("62"))
+	quoteTextStyle = newStyle().Foreground(lipgloss.Color("244")).Italic(true)
+	codeBlockStyle = newStyle().Foreground(lipgloss.Color("108"))
+	codeBorderStyle = newStyle().Foreground(lipgloss.Color("238"))
+	inlineCodeStyle = newStyle().Foreground(lipgloss.Color("108"))
+	bulletStyle = newStyle().Foreground(lipgloss.Color("62")).Bold(true)
+}
 
 // TOCEntry holds the title and line offset of an h2 heading.
 type TOCEntry struct {

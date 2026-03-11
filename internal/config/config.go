@@ -253,11 +253,21 @@ func applyDefaults(cfg *Config) {
 
 // getEnvOrDefault returns the value of an environment variable or a fallback.
 func getEnvOrDefault(env, fallback string) string {
-	v := os.Getenv(env)
+	v := strings.TrimSpace(os.Getenv(env))
 	if v != "" {
-		return v
+		return trimOptionalQuotes(v)
 	}
 	return fallback
+}
+
+func trimOptionalQuotes(v string) string {
+	if len(v) >= 2 {
+		if (v[0] == '"' && v[len(v)-1] == '"') || (v[0] == '\'' && v[len(v)-1] == '\'') {
+			return v[1 : len(v)-1]
+		}
+	}
+
+	return v
 }
 
 // GetSSHConfig returns SSH config values, preferring environment variables.

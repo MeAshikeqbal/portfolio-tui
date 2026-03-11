@@ -9,12 +9,29 @@ import (
 )
 
 var (
-	titleStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("226"))
-	numStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("51"))
-	entryStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	hintStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	borderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+	titleStyle  lipgloss.Style
+	numStyle    lipgloss.Style
+	entryStyle  lipgloss.Style
+	hintStyle   lipgloss.Style
+	borderStyle lipgloss.Style
 )
+
+func init() {
+	SetRenderer(nil)
+}
+
+func SetRenderer(r *lipgloss.Renderer) {
+	newStyle := lipgloss.NewStyle
+	if r != nil {
+		newStyle = r.NewStyle
+	}
+
+	titleStyle = newStyle().Bold(true).Foreground(lipgloss.Color("226"))
+	numStyle = newStyle().Bold(true).Foreground(lipgloss.Color("51"))
+	entryStyle = newStyle().Foreground(lipgloss.Color("252"))
+	hintStyle = newStyle().Foreground(lipgloss.Color("244"))
+	borderStyle = newStyle().Foreground(lipgloss.Color("238"))
+}
 
 // TOCModal renders a centered table-of-contents popup.
 type TOCModal struct {

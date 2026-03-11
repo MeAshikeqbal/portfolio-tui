@@ -2,78 +2,109 @@ package styles
 
 import "github.com/charmbracelet/lipgloss"
 
-var Title = lipgloss.NewStyle().
-	Bold(true).
-	Foreground(lipgloss.Color("205"))
+var (
+	Title             lipgloss.Style
+	MenuItem          lipgloss.Style
+	SelectedItem      lipgloss.Style
+	Footer            lipgloss.Style
+	ViewportStyle     lipgloss.Style
+	LoadingStyle      lipgloss.Style
+	BlogTitleStyle    lipgloss.Style
+	BlogScrollInfo    lipgloss.Style
+	LineNumberStyle   lipgloss.Style
+	SidebarTitle      lipgloss.Style
+	SidebarMeta       lipgloss.Style
+	SidebarSection    lipgloss.Style
+	SidebarItem       lipgloss.Style
+	SidebarActiveItem lipgloss.Style
+	NeoTitle          lipgloss.Style
+	NeoLabel          lipgloss.Style
+	NeoSeparator      lipgloss.Style
+)
 
-var MenuItem = lipgloss.NewStyle().
-	PaddingLeft(2)
+func init() {
+	SetRenderer(nil)
+}
 
-var SelectedItem = lipgloss.NewStyle().
-	PaddingLeft(2).
-	Foreground(lipgloss.Color("170")).
-	Bold(true)
+func SetRenderer(r *lipgloss.Renderer) {
+	newStyle := lipgloss.NewStyle
+	if r != nil {
+		newStyle = r.NewStyle
+	}
 
-var Footer = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240"))
+	Title = newStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
 
-var ViewportStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("62")).
-	PaddingLeft(2).
-	PaddingRight(2)
+	MenuItem = newStyle().
+		PaddingLeft(2)
 
-var LoadingStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("205")).
-	Bold(true)
+	SelectedItem = newStyle().
+		PaddingLeft(2).
+		Foreground(lipgloss.Color("170")).
+		Bold(true)
 
-var BlogTitleStyle = lipgloss.NewStyle().
-	Bold(true).
-	Foreground(lipgloss.Color("205")).
-	PaddingLeft(1).
-	PaddingRight(1).
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderRight(false)
+	Footer = newStyle().
+		Foreground(lipgloss.Color("240"))
 
-var BlogScrollInfo = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240")).
-	PaddingLeft(1).
-	PaddingRight(1).
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderLeft(false)
+	ViewportStyle = newStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		PaddingLeft(2).
+		PaddingRight(2)
 
-var LineNumberStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240"))
+	LoadingStyle = newStyle().
+		Foreground(lipgloss.Color("205")).
+		Bold(true)
 
-var SidebarTitle = lipgloss.NewStyle().
-	Bold(true).
-	Foreground(lipgloss.Color("81"))
+	BlogTitleStyle = newStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205")).
+		PaddingLeft(1).
+		PaddingRight(1).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderRight(false)
 
-var SidebarMeta = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("248"))
+	BlogScrollInfo = newStyle().
+		Foreground(lipgloss.Color("240")).
+		PaddingLeft(1).
+		PaddingRight(1).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderLeft(false)
 
-var SidebarSection = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("244")).
-	Bold(true)
+	LineNumberStyle = newStyle().
+		Foreground(lipgloss.Color("240"))
 
-var SidebarItem = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("250")).
-	PaddingLeft(1)
+	SidebarTitle = newStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("81"))
 
-var SidebarActiveItem = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("230")).
-	Background(lipgloss.Color("63")).
-	Bold(true).
-	PaddingLeft(1).
-	PaddingRight(1)
+	SidebarMeta = newStyle().
+		Foreground(lipgloss.Color("248"))
 
-var NeoTitle = lipgloss.NewStyle().
-	Bold(true).
-	Foreground(lipgloss.Color("86"))
+	SidebarSection = newStyle().
+		Foreground(lipgloss.Color("244")).
+		Bold(true)
 
-var NeoLabel = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("111")).
-	Bold(true)
+	SidebarItem = newStyle().
+		Foreground(lipgloss.Color("250")).
+		PaddingLeft(1)
 
-var NeoSeparator = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("244"))
+	SidebarActiveItem = newStyle().
+		Foreground(lipgloss.Color("230")).
+		Background(lipgloss.Color("63")).
+		Bold(true).
+		PaddingLeft(1).
+		PaddingRight(1)
+
+	NeoTitle = newStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("86"))
+
+	NeoLabel = newStyle().
+		Foreground(lipgloss.Color("111")).
+		Bold(true)
+
+	NeoSeparator = newStyle().
+		Foreground(lipgloss.Color("244"))
+}
