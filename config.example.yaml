@@ -40,5 +40,5 @@ branding:
 # SSH server settings (used with `portfolio-tui serve`)
 ssh:
   host: "0.0.0.0"
-  port: "23234"
+  port: "22"
   host_key_path: ".ssh/term_key"

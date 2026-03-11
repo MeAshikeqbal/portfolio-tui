@@ -15,7 +15,7 @@ FROM alpine:3.21
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates && \
+RUN apk add --no-cache ca-certificates libcap && \
     addgroup -S portfolio && \
     adduser -S -G portfolio -h /app portfolio && \
     mkdir -p /app/logs /app/.ssh && \
@@ -25,11 +25,12 @@ COPY --from=builder /out/portfolio-tui /usr/local/bin/portfolio-tui
 COPY --chown=portfolio:portfolio config.example.yaml /app/config.example.yaml
 COPY --chown=portfolio:portfolio docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    setcap 'cap_net_bind_service=+ep' /usr/local/bin/portfolio-tui
 
 USER portfolio
 
-EXPOSE 23234
+EXPOSE 22
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["serve"]

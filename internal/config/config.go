@@ -131,7 +131,7 @@ var defaultConfig = Config{
 		HostKeyPath string `yaml:"host_key_path"`
 	}{
 		Host:        "0.0.0.0",
-		Port:        "23234",
+		Port:        "22",
 		HostKeyPath: ".ssh/term_key",
 	},
 }
@@ -248,6 +248,15 @@ func applyDefaults(cfg *Config) {
 	}
 	if cfg.Branding.SidebarLogo == "" {
 		cfg.Branding.SidebarLogo = defaultConfig.Branding.SidebarLogo
+	}
+	if cfg.SSH.Host == "" {
+		cfg.SSH.Host = defaultConfig.SSH.Host
+	}
+	if cfg.SSH.Port == "" {
+		cfg.SSH.Port = defaultConfig.SSH.Port
+	}
+	if cfg.SSH.HostKeyPath == "" {
+		cfg.SSH.HostKeyPath = defaultConfig.SSH.HostKeyPath
 	}
 }
 

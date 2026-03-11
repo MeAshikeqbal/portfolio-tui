@@ -58,7 +58,7 @@ The container image is set up for SSH server mode by default. The listening port
 docker build -t portfolio-tui .
 
 # Run the SSH server on the port defined in .env
-docker run --rm -p 0.0.0.0:23456:23456 \
+docker run --rm -p 0.0.0.0:22:22 \
   --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   portfolio-tui
@@ -67,8 +67,10 @@ docker run --rm -p 0.0.0.0:23456:23456 \
 Connect to it with:
 
 ```bash
-ssh -p 23456 localhost
+ssh localhost
 ```
+
+Note: host port `22` must be free. If the machine is already running `sshd` on port `22`, change `PORTFOLIO_SSH_PORT` in `.env` before starting the container.
 
 ## Docker Compose
 
@@ -94,14 +96,14 @@ Compose publishes the port from `PORTFOLIO_SSH_PORT` in `.env` on `PORTFOLIO_BIN
 With the current example:
 
 ```bash
-ssh -p 23456 localhost
+ssh localhost
 ```
 
 Useful container variants:
 
 ```bash
 # Persist generated SSH host keys and logs
-docker run --rm -p 23456:23456 \
+docker run --rm -p 22:22 \
   --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   -v "$(pwd)/.ssh:/app/.ssh" \
