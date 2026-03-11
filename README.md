@@ -60,7 +60,7 @@ The container image starts in SSH server mode by default. The listening address 
 docker build -t portfolio-tui .
 
 # Run the SSH server with the defaults from .env
-docker run --rm -p 0.0.0.0:22:22 \
+docker run --rm -p 0.0.0.0:23234:23234 \
   --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   portfolio-tui
@@ -69,10 +69,10 @@ docker run --rm -p 0.0.0.0:22:22 \
 Connect to it with:
 
 ```bash
-ssh localhost
+ssh -p 23234 localhost
 ```
 
-Note: host port `22` must be free. If the machine is already running `sshd` on port `22`, change `PORTFOLIO_SSH_PORT` in `.env` before starting the container.
+Note: the default host port is `23234` to keep local `portfolio-tui serve` unprivileged. Change `PORTFOLIO_SSH_PORT` in `.env` if you want a different published port.
 
 ## Docker Compose
 
@@ -98,8 +98,8 @@ Compose publishes the port from `PORTFOLIO_SSH_PORT` in `.env` on `PORTFOLIO_BIN
 Common `.env` adjustments:
 
 ```env
-# Use the standard SSH port only if the host is not already using port 22
-PORTFOLIO_SSH_PORT=22
+# Default unprivileged SSH port
+PORTFOLIO_SSH_PORT=23234
 
 # Or move the container SSH server to a different host port
 PORTFOLIO_SSH_PORT=2222
@@ -114,14 +114,14 @@ PORTFOLIO_BIND_IP=192.168.1.10
 With the current example:
 
 ```bash
-ssh localhost
+ssh -p 23234 localhost
 ```
 
 Useful container variants:
 
 ```bash
 # Persist generated SSH host keys and logs
-docker run --rm -p 22:22 \
+docker run --rm -p 23234:23234 \
   --env-file .env \
   -v "$(pwd)/config.yaml:/app/config.yaml:ro" \
   -v "$(pwd)/.ssh:/app/.ssh" \
@@ -147,7 +147,7 @@ SANITY_API_VERSION=2024-12-21
 
 # SSH server configuration
 PORTFOLIO_SSH_HOST=0.0.0.0
-PORTFOLIO_SSH_PORT=22
+PORTFOLIO_SSH_PORT=23234
 PORTFOLIO_SSH_KEY=.ssh/term_key
 PORTFOLIO_BIND_IP=0.0.0.0
 ```

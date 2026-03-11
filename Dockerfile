@@ -30,7 +30,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
 
 USER portfolio
 
-EXPOSE 22
+EXPOSE 23234
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["serve"]

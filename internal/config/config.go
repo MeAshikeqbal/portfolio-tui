@@ -131,7 +131,7 @@ var defaultConfig = Config{
 		HostKeyPath string `yaml:"host_key_path"`
 	}{
 		Host:        "0.0.0.0",
-		Port:        "22",
+		Port:        "23234",
 		HostKeyPath: ".ssh/term_key",
 	},
 }
