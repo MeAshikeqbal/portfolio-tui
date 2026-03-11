@@ -89,9 +89,9 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 
 func runSSHServer(cfg *config.Config) {
 	// Use env/config for SSH settings
-	host, port, keyPath := config.GetSSHConfig(cfg)
+	sshCfg := config.GetSSHConfig(cfg)
 
-	addr := host + ":" + port
+	addr := sshCfg.Host + ":" + sshCfg.Port
 
 	logFile, err := configureLogging("logs/ssh-server.log")
 	if err != nil {
@@ -101,7 +101,7 @@ func runSSHServer(cfg *config.Config) {
 		defer logFile.Close()
 	}
 
-	if err := ensureParentDir(keyPath); err != nil {
+	if err := ensureParentDir(sshCfg.HostKeyPath); err != nil {
 		log.Printf("Could not create SSH key directory: %v", err)
 	}
 
@@ -109,7 +109,7 @@ func runSSHServer(cfg *config.Config) {
 
 	s, err := wish.NewServer(
 		wish.WithAddress(addr),
-		wish.WithHostKeyPath(keyPath),
+		wish.WithHostKeyPath(sshCfg.HostKeyPath),
 		wish.WithMiddleware(
 			wishbubbletea.Middleware(teaHandler),
 			logging.MiddlewareWithLogger(customLogger),

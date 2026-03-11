@@ -3,7 +3,9 @@ package config
 import (
 	"os"
 	"strings"
+	"sync"
 
+	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
@@ -136,10 +138,27 @@ var defaultConfig = Config{
 	},
 }
 
-var globalConfig *Config
+type SSHRuntimeConfig struct {
+	Host        string
+	Port        string
+	HostKeyPath string
+}
+
+type SanityRuntimeConfig struct {
+	ProjectID  string
+	Dataset    string
+	APIVersion string
+}
+
+var (
+	globalConfig *Config
+	envLoadOnce  sync.Once
+)
 
 // Load loads configuration from file or uses defaults
 func Load(configPath string) (*Config, error) {
+	loadEnvFile()
+
 	// Try to load from file
 	if configPath != "" {
 		data, err := os.ReadFile(configPath)
@@ -184,10 +203,19 @@ func Load(configPath string) (*Config, error) {
 
 // Get returns the global config instance
 func Get() *Config {
+	loadEnvFile()
+
 	if globalConfig == nil {
 		globalConfig = &defaultConfig
 	}
 	return globalConfig
+}
+
+func loadEnvFile() {
+	envLoadOnce.Do(func() {
+		// Ignore missing .env files because container/runtime env may already be set.
+		_ = godotenv.Load()
+	})
 }
 
 // applyDefaults fills in missing values with defaults
@@ -262,6 +290,8 @@ func applyDefaults(cfg *Config) {
 
 // getEnvOrDefault returns the value of an environment variable or a fallback.
 func getEnvOrDefault(env, fallback string) string {
+	loadEnvFile()
+
 	v := strings.TrimSpace(os.Getenv(env))
 	if v != "" {
 		return trimOptionalQuotes(v)
@@ -280,11 +310,23 @@ func trimOptionalQuotes(v string) string {
 }
 
 // GetSSHConfig returns SSH config values, preferring environment variables.
-func GetSSHConfig(cfg *Config) (host, port, keyPath string) {
+func GetSSHConfig(cfg *Config) SSHRuntimeConfig {
 	if cfg == nil {
-		cfg = &defaultConfig
+		cfg = Get()
 	}
-	return getEnvOrDefault("PORTFOLIO_SSH_HOST", cfg.SSH.Host),
-		getEnvOrDefault("PORTFOLIO_SSH_PORT", cfg.SSH.Port),
-		getEnvOrDefault("PORTFOLIO_SSH_KEY", cfg.SSH.HostKeyPath)
+
+	return SSHRuntimeConfig{
+		Host:        getEnvOrDefault("PORTFOLIO_SSH_HOST", cfg.SSH.Host),
+		Port:        getEnvOrDefault("PORTFOLIO_SSH_PORT", cfg.SSH.Port),
+		HostKeyPath: getEnvOrDefault("PORTFOLIO_SSH_KEY", cfg.SSH.HostKeyPath),
+	}
+}
+
+// GetSanityConfig returns Sanity config values from the shared env loading path.
+func GetSanityConfig() SanityRuntimeConfig {
+	return SanityRuntimeConfig{
+		ProjectID:  getEnvOrDefault("SANITY_PROJECT_ID", "0oqq6f9z"),
+		Dataset:    getEnvOrDefault("SANITY_DATASET", "production"),
+		APIVersion: getEnvOrDefault("SANITY_API_VERSION", "2024-12-21"),
+	}
 }

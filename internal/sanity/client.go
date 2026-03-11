@@ -6,35 +6,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/MeAshikeqbal/portfolio-tui/internal/config"
-	"github.com/joho/godotenv"
 )
-
-var (
-	projectID  string
-	dataset    string
-	apiVersion string
-)
-
-func init() {
-	// Load .env file (ignore error if it doesn't exist, as env vars might be set elsewhere)
-	_ = godotenv.Load()
-
-	// Get environment variables with fallback values
-	projectID = getEnv("SANITY_PROJECT_ID", "0oqq6f9z")
-	dataset = getEnv("SANITY_DATASET", "production")
-	apiVersion = getEnv("SANITY_API_VERSION", "2024-12-21")
-}
-
-func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return fallback
-}
 
 type Client struct {
 	baseURL    string
@@ -143,15 +118,22 @@ type WorkExperience struct {
 
 // Experience represents a year group of work experiences from Sanity
 type Experience struct {
-	ID    string          `json:"_id"`
-	Year  string          `json:"year"`
+	ID    string           `json:"_id"`
+	Year  string           `json:"year"`
 	Works []WorkExperience `json:"works"`
 }
 
 func NewClient() *Client {
+	sanityCfg := config.GetSanityConfig()
+
 	// Sanity API endpoint format: https://{projectId}.api.sanity.io/v{apiVersion}/data/query/{dataset}
 	// The apiVersion should be like "2024-12-21" and we add "v" prefix in the URL
-	baseURL := fmt.Sprintf("https://%s.api.sanity.io/v%s/data/query/%s", projectID, apiVersion, dataset)
+	baseURL := fmt.Sprintf(
+		"https://%s.api.sanity.io/v%s/data/query/%s",
+		sanityCfg.ProjectID,
+		sanityCfg.APIVersion,
+		sanityCfg.Dataset,
+	)
 	return &Client{
 		baseURL: baseURL,
 		httpClient: &http.Client{
