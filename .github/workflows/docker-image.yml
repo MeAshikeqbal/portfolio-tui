@@ -15,6 +15,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE_DESCRIPTION: Terminal portfolio application built with Go.
+
 jobs:
   docker:
     runs-on: self-hosted
@@ -35,6 +38,10 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=sha,prefix=sha-
+          labels: |
+            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
+          annotations: |
+            org.opencontainers.image.description=${{ env.IMAGE_DESCRIPTION }}
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -52,6 +59,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
