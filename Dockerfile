@@ -12,6 +12,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/portfolio-tui .
 
 FROM alpine:3.21
+LABEL org.opencontainers.image.description="Terminal portfolio application built with Go."
 
 WORKDIR /app
 
