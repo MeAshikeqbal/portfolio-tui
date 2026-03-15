@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -140,6 +141,10 @@ func runSSHServer(cfg *config.Config) {
 }
 
 func configureLogging(path string) (*os.File, error) {
+	return configureLoggingWithConsole(path, os.Stderr)
+}
+
+func configureLoggingWithConsole(path string, console io.Writer) (*os.File, error) {
 	if err := ensureParentDir(path); err != nil {
 		return nil, err
 	}
@@ -149,7 +154,11 @@ func configureLogging(path string) (*os.File, error) {
 		return nil, err
 	}
 
-	log.SetOutput(logFile)
+	if console == nil {
+		console = io.Discard
+	}
+
+	log.SetOutput(io.MultiWriter(console, logFile))
 	return logFile, nil
 }
 
