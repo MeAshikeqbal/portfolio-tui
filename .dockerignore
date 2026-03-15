@@ -2,7 +2,6 @@
 .gitignore
 .env
 .env.*
-!.env.example
 .vscode
 .idea
 tmp
@@ -15,3 +14,10 @@ config.yaml
 config.yml
 .portfolio-tui.yaml
 .portfolio-tui.yml
+.github
+.actrc
+assets
+README.md
+CONFIG.md
+compose.yaml
+setup-config.sh
