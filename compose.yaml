@@ -1,6 +1,6 @@
 services:
   portfolio-tui:
-    image: "${PORTFOLIO_IMAGE:-ghcr.io/meashikeqbal/portfolio-tui:latest}"
+    image: ghcr.io/meashikeqbal/portfolio-tui:latest
     pull_policy: always
     container_name: portfolio-tui
     restart: unless-stopped
