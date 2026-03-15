@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"github.com/MeAshikeqbal/portfolio-tui/internal/ui"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/keygen"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	wishbubbletea "github.com/charmbracelet/wish/bubbletea"
@@ -101,8 +103,8 @@ func runSSHServer(cfg *config.Config) {
 		defer logFile.Close()
 	}
 
-	if err := ensureParentDir(sshCfg.HostKeyPath); err != nil {
-		log.Printf("Could not create SSH key directory: %v", err)
+	if err := ensureSSHHostKey(sshCfg.HostKeyPath); err != nil {
+		log.Printf("Could not prepare SSH host key: %v", err)
 	}
 
 	customLogger := log.New(log.Writer(), "", log.LstdFlags)
@@ -158,4 +160,25 @@ func ensureParentDir(path string) error {
 	}
 
 	return os.MkdirAll(dir, 0755)
+}
+
+func ensureSSHHostKey(path string) error {
+	if err := ensureParentDir(path); err != nil {
+		return err
+	}
+
+	_, err := os.Stat(path)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	if _, err := keygen.New(path, keygen.WithWrite()); err != nil {
+		return err
+	}
+
+	log.Printf("Generated SSH host key at %s", path)
+	return nil
 }

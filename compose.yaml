@@ -3,7 +3,6 @@ services:
     image: "${PORTFOLIO_IMAGE:-ghcr.io/meashikeqbal/portfolio-tui:latest}"
     pull_policy: always
     container_name: portfolio-tui
-    user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     command: serve
     env_file:
@@ -11,6 +10,17 @@ services:
     ports:
       - "${PORTFOLIO_BIND_IP:-0.0.0.0}:${PORTFOLIO_SSH_PORT:-23234}:${PORTFOLIO_SSH_PORT:-23234}"
     volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./.ssh:/app/.ssh
-      - ./logs:/app/logs
+      - type: bind
+        source: ./config.yaml
+        target: /app/config.yaml
+        read_only: true
+      - type: volume
+        source: portfolio_tui_ssh
+        target: /app/.ssh
+      - type: volume
+        source: portfolio_tui_logs
+        target: /app/logs
+
+volumes:
+  portfolio_tui_ssh:
+  portfolio_tui_logs:

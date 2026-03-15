@@ -76,7 +76,7 @@ Note: the default host port is `23234` to keep local `portfolio-tui serve` unpri
 
 ## Docker Compose
 
-Use Compose when you want the config file, SSH host keys, logs, and `.env` managed together. The default Compose image now comes from GitHub Container Registry and is published by `.github/workflows/docker-image.yml`. This setup bind-mounts `./.ssh` and `./logs` from the host, so generated keys and log files stay in the repo directory.
+Use Compose when you want the config file, SSH host keys, logs, and `.env` managed together. The default Compose image now comes from GitHub Container Registry and is published by `.github/workflows/docker-image.yml`. This setup bind-mounts `config.yaml` and stores SSH keys plus logs in persistent Docker volumes. The SSH host key is generated automatically on first boot if the mounted volume is empty.
 
 ```bash
 # Pull the latest published image and start the service
@@ -89,12 +89,17 @@ docker compose logs -f
 # Stop and remove the container
 docker compose down
 
-# If your host UID/GID is not 1000, export them before running compose
-export UID=$(id -u)
-export GID=$(id -g)
 ```
 
-Compose pulls `PORTFOLIO_IMAGE` from `.env`, publishes the port from `PORTFOLIO_SSH_PORT` on `PORTFOLIO_BIND_IP`, and writes SSH keys/logs back to the host bind mounts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
+Compose pulls `PORTFOLIO_IMAGE` from `.env`, publishes the port from `PORTFOLIO_SSH_PORT` on `PORTFOLIO_BIND_IP`, and keeps SSH keys/logs in Docker-managed volumes across restarts. Leave `PORTFOLIO_BIND_IP=0.0.0.0` to listen on all host interfaces, or set it to a specific host IP such as `192.168.1.10`.
+
+To inspect or remove the persistent data:
+
+```bash
+docker volume inspect portfolio-tui_portfolio_tui_ssh
+docker volume inspect portfolio-tui_portfolio_tui_logs
+docker compose down -v
+```
 
 Common `.env` adjustments:
 

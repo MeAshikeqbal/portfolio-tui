@@ -80,4 +80,4 @@ See `config.example.yaml` for a complete example with all available options.
 - `PORTFOLIO_SSH_KEY`
 - `PORTFOLIO_BIND_IP`
 
-`config.yaml` controls the app's profile and can also define SSH defaults under the `ssh:` section. Environment variables override those defaults at runtime, which is especially useful for Docker and Docker Compose.
+`config.yaml` controls the app's profile and can also define SSH defaults under the `ssh:` section. Environment variables override those defaults at runtime, which is especially useful for Docker and Docker Compose. If the SSH host key file does not exist at `PORTFOLIO_SSH_KEY`, the server generates it automatically on startup.
